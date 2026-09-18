@@ -14,7 +14,7 @@ export class Environment {
   private readonly sprayLife: Float32Array;
   private sprayCursor = 0;
   private sprayBudget = 0;
-  private readonly traffic: Array<{ vehicle: THREE.Group; progress: number; offset: number; speed: number }> = [];
+  private readonly traffic: Array<{ vehicle: THREE.Group; progress: number; offset: number; speed: number; headingOffset: number }> = [];
   private readonly track: Track;
   private readonly fallbackScenery = new THREE.Group();
   private elapsed = 0;
@@ -33,6 +33,7 @@ export class Environment {
     this.loadPalms(scene, track, compact ? 6 : 10);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
+    this.loadRedBus(scene);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
     const rain = this.createRain(this.rainCount);
     this.rain = rain.points;
@@ -239,7 +240,7 @@ export class Environment {
       item.progress = (item.progress + delta * item.speed) % 1;
       const pose = this.track.getPose(item.progress, item.offset);
       item.vehicle.position.copy(pose.position).setY(.17);
-      item.vehicle.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z);
+      item.vehicle.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z) + item.headingOffset;
     }
   }
 
@@ -340,8 +341,44 @@ export class Environment {
         progress: (i / count + .08) % 1,
         offset: [-7.2, -3.8, 3.8, 7.2][i % 4],
         speed: .011 + (i % 3) * .002,
+        headingOffset: 0,
       });
     }
+  }
+
+  private loadRedBus(scene: THREE.Scene): void {
+    new GLTFLoader().load(theme.environment.redBusModel, (gltf) => {
+      const model = gltf.scene;
+      const bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const scale = theme.environment.redBusHeight / Math.max(size.y, .001);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+      model.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            material.envMapIntensity = .65;
+            material.roughness = Math.max(material.roughness, .38);
+          }
+        });
+      });
+      const vehicle = new THREE.Group();
+      vehicle.name = "BEST bus traffic";
+      vehicle.add(model);
+      scene.add(vehicle);
+      this.traffic.push({
+        vehicle,
+        progress: .37,
+        offset: -7.2,
+        speed: .0085,
+        headingOffset: -Math.PI / 2,
+      });
+    });
   }
 
   private addSky(scene: THREE.Scene): void {

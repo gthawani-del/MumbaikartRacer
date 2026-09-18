@@ -3,6 +3,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { AutoRickshaw } from "./AutoRickshaw";
 import { Environment } from "./Environment";
@@ -22,6 +23,10 @@ export class App {
   private readonly auto: AutoRickshaw;
   private readonly environment: Environment;
   private readonly input: Input;
+  private readonly staticEnvironment: THREE.Texture;
+  private reflectionTarget?: THREE.WebGLCubeRenderTarget;
+  private reflectionCamera?: THREE.CubeCamera;
+  private reflectionFrame = 0;
   private readonly mobile = matchMedia("(pointer: coarse)").matches || window.innerWidth < 760;
   private mode: Mode = "waiting";
   private modeTime = 0;
@@ -45,7 +50,8 @@ export class App {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 1.15 : 1.65));
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+    this.staticEnvironment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+    this.scene.environment = this.staticEnvironment;
     pmrem.dispose();
     this.scene.fog = new THREE.FogExp2(theme.render.fogColor, theme.render.fogDensity);
 
@@ -55,9 +61,15 @@ export class App {
     this.input = new Input(root);
     this.addLighting();
     this.placeAuto();
+    this.setupReflections();
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    if (!this.mobile) {
+      const gtao = new GTAOPass(this.scene, this.camera, innerWidth, innerHeight);
+      gtao.blendIntensity = .42;
+      this.composer.addPass(gtao);
+    }
     this.composer.addPass(new UnrealBloomPass(
       new THREE.Vector2(innerWidth, innerHeight),
       theme.render.bloomStrength,
@@ -103,6 +115,7 @@ export class App {
     this.updateCamera(delta);
     const environmentPose = this.track.getPose(this.progress, this.laneOffset);
     this.environment.update(delta, this.auto.group.position, this.speed, environmentPose.tangent, environmentPose.side);
+    this.updateReflections();
     this.updateHud();
     this.updateAudio();
     this.composer.render();
@@ -192,6 +205,30 @@ export class App {
     sun.shadow.camera.bottom = -80;
     sun.shadow.bias = -.00025;
     this.scene.add(sun);
+  }
+
+  private setupReflections(): void {
+    if (this.mobile) return;
+    this.reflectionTarget = new THREE.WebGLCubeRenderTarget(192, {
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
+      colorSpace: THREE.SRGBColorSpace,
+    });
+    this.reflectionCamera = new THREE.CubeCamera(.6, 150, this.reflectionTarget);
+    this.scene.add(this.reflectionCamera);
+  }
+
+  private updateReflections(): void {
+    if (!this.reflectionCamera || !this.reflectionTarget || ++this.reflectionFrame % 18 !== 0) return;
+    this.reflectionCamera.position.copy(this.auto.group.position).setY(1.1);
+    const previousEnvironment = this.scene.environment;
+    const wasVisible = this.auto.group.visible;
+    this.scene.environment = this.staticEnvironment;
+    this.auto.group.visible = false;
+    this.reflectionCamera.update(this.renderer, this.scene);
+    this.auto.group.visible = wasVisible;
+    this.scene.environment = this.reflectionTarget.texture;
+    if (!previousEnvironment) this.scene.environment = this.reflectionTarget.texture;
   }
 
   private bindUi(): void {
