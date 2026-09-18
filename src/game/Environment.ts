@@ -1,11 +1,18 @@
 import * as THREE from "three";
 import { Track } from "./Track";
+import theme from "../theme.json";
 
 export class Environment {
   readonly rain: THREE.Points;
   private readonly rainPositions: Float32Array;
   private readonly rainCount: number;
   private readonly water: THREE.Mesh;
+  private readonly spray: THREE.Points;
+  private readonly sprayPositions: Float32Array;
+  private readonly sprayVelocity: Float32Array;
+  private readonly sprayLife: Float32Array;
+  private sprayCursor = 0;
+  private sprayBudget = 0;
   private readonly traffic: Array<{ vehicle: THREE.Group; progress: number; offset: number; speed: number }> = [];
   private readonly track: Track;
   private elapsed = 0;
@@ -20,14 +27,20 @@ export class Environment {
     this.addPalms(scene, track, compact ? 16 : 30);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
-    this.rainCount = compact ? 900 : 1900;
+    this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
     const rain = this.createRain(this.rainCount);
     this.rain = rain.points;
     this.rainPositions = rain.positions;
     scene.add(this.rain);
+    const spray = this.createSpray(theme.weather.sprayParticles);
+    this.spray = spray.points;
+    this.sprayPositions = spray.positions;
+    this.sprayVelocity = spray.velocity;
+    this.sprayLife = spray.life;
+    scene.add(this.spray);
   }
 
-  update(delta: number, focus: THREE.Vector3): void {
+  update(delta: number, focus: THREE.Vector3, speed: number, tangent: THREE.Vector3, side: THREE.Vector3): void {
     this.elapsed += delta;
     const positions = this.rainPositions;
     for (let i = 0; i < this.rainCount; i++) {
@@ -38,12 +51,71 @@ export class Environment {
     this.rain.geometry.attributes.position.needsUpdate = true;
     this.rain.position.set(focus.x, 0, focus.z);
     this.water.position.y = -1.1 + Math.sin(this.elapsed * .5) * .045;
+    this.updateSpray(delta, focus, speed, tangent, side);
     for (const item of this.traffic) {
       item.progress = (item.progress + delta * item.speed) % 1;
       const pose = this.track.getPose(item.progress, item.offset);
       item.vehicle.position.copy(pose.position).setY(.17);
       item.vehicle.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z);
     }
+  }
+
+  private updateSpray(delta: number, focus: THREE.Vector3, speed: number, tangent: THREE.Vector3, side: THREE.Vector3): void {
+    for (let i = 0; i < this.sprayLife.length; i++) {
+      if (this.sprayLife[i] <= 0) continue;
+      this.sprayLife[i] -= delta;
+      const offset = i * 3;
+      this.sprayPositions[offset] += this.sprayVelocity[offset] * delta;
+      this.sprayPositions[offset + 1] += this.sprayVelocity[offset + 1] * delta;
+      this.sprayPositions[offset + 2] += this.sprayVelocity[offset + 2] * delta;
+      this.sprayVelocity[offset + 1] -= 9.8 * delta;
+      if (this.sprayLife[i] <= 0 || this.sprayPositions[offset + 1] < .04) {
+        this.sprayLife[i] = 0;
+        this.sprayPositions[offset + 1] = -1000;
+      }
+    }
+
+    if (speed >= theme.weather.sprayMinimumSpeed) {
+      this.sprayBudget += delta * Math.min(95, speed * .56);
+      while (this.sprayBudget >= 1) {
+        this.emitSpray(focus, speed, tangent, side, this.sprayCursor % 2 === 0 ? -1 : 1);
+        this.sprayBudget -= 1;
+      }
+    }
+    this.spray.geometry.attributes.position.needsUpdate = true;
+  }
+
+  private emitSpray(focus: THREE.Vector3, speed: number, tangent: THREE.Vector3, side: THREE.Vector3, wheelSide: number): void {
+    const index = this.sprayCursor++ % this.sprayLife.length;
+    const offset = index * 3;
+    const origin = focus.clone().addScaledVector(tangent, -1.05).addScaledVector(side, wheelSide * .68);
+    this.sprayPositions[offset] = origin.x + (Math.random() - .5) * .16;
+    this.sprayPositions[offset + 1] = .22 + Math.random() * .12;
+    this.sprayPositions[offset + 2] = origin.z + (Math.random() - .5) * .16;
+    const backward = 1.2 + speed / 42 + Math.random() * 1.4;
+    const outward = wheelSide * (.5 + Math.random() * 1.1);
+    this.sprayVelocity[offset] = -tangent.x * backward + side.x * outward;
+    this.sprayVelocity[offset + 1] = 1.2 + Math.random() * 2.25;
+    this.sprayVelocity[offset + 2] = -tangent.z * backward + side.z * outward;
+    this.sprayLife[index] = .32 + Math.random() * .32;
+  }
+
+  private createSpray(count: number): { points: THREE.Points; positions: Float32Array; velocity: Float32Array; life: Float32Array } {
+    const positions = new Float32Array(count * 3);
+    const velocity = new Float32Array(count * 3);
+    const life = new Float32Array(count);
+    positions.fill(-1000);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({
+      color: 0xb9d6db,
+      size: .075,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: .58,
+      depthWrite: false,
+    });
+    return { points: new THREE.Points(geometry, material), positions, velocity, life };
   }
 
   private addTraffic(scene: THREE.Scene, count: number): void {
@@ -95,9 +167,9 @@ export class Environment {
       new THREE.ShaderMaterial({
         side: THREE.BackSide,
         uniforms: {
-          topColor: { value: new THREE.Color(0x071827) },
-          horizonColor: { value: new THREE.Color(0x315366) },
-          warmColor: { value: new THREE.Color(0xd87a3e) },
+          topColor: { value: new THREE.Color(theme.palette.skyTop) },
+          horizonColor: { value: new THREE.Color(theme.palette.skyHorizon) },
+          warmColor: { value: new THREE.Color(theme.palette.skyWarm) },
         },
         vertexShader: `varying vec3 vWorld; void main(){ vec4 world = modelMatrix * vec4(position,1.0); vWorld=world.xyz; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
         fragmentShader: `
@@ -116,7 +188,7 @@ export class Environment {
   private addWater(scene: THREE.Scene): void {
     const water = new THREE.Mesh(
       new THREE.CircleGeometry(350, 96),
-      new THREE.MeshPhysicalMaterial({ color: 0x0b3545, roughness: .22, metalness: .28, clearcoat: 1, clearcoatRoughness: .11, envMapIntensity: 1.4 }),
+      new THREE.MeshPhysicalMaterial({ color: theme.palette.sea, roughness: .3, metalness: .18, clearcoat: .72, clearcoatRoughness: .18, envMapIntensity: 1 }),
     );
     water.name = "Arabian Sea";
     water.rotation.x = -Math.PI / 2;
@@ -196,7 +268,7 @@ export class Environment {
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x273237, metalness: .62, roughness: .4 });
     const poles = new THREE.InstancedMesh(poleGeo, poleMat, count * 2);
     const lampGeo = new THREE.SphereGeometry(.16, 10, 8);
-    const lampMat = new THREE.MeshStandardMaterial({ color: 0xffd29a, emissive: 0xff9a3c, emissiveIntensity: 5, roughness: .15 });
+    const lampMat = new THREE.MeshStandardMaterial({ color: 0xffd29a, emissive: 0xff9a3c, emissiveIntensity: 2.3, roughness: .22 });
     const lamps = new THREE.InstancedMesh(lampGeo, lampMat, count * 2);
     const matrix = new THREE.Matrix4();
     let index = 0;
@@ -208,7 +280,7 @@ export class Environment {
         matrix.makeTranslation(pose.position.x, 4.78, pose.position.z);
         lamps.setMatrixAt(index, matrix);
         if (i % 8 === 0 && side === 1) {
-          const light = new THREE.PointLight(0xffa85d, 20, 18, 2);
+          const light = new THREE.PointLight(0xffa85d, 8, 14, 2);
           light.position.set(pose.position.x, 4.4, pose.position.z);
           scene.add(light);
         }
@@ -276,7 +348,7 @@ export class Environment {
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({ color: 0xb9d8e1, size: .035, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending });
+    const material = new THREE.PointsMaterial({ color: 0x91b3bc, size: .022, transparent: true, opacity: theme.weather.rainOpacity, depthWrite: false });
     return { points: new THREE.Points(geometry, material), positions };
   }
 

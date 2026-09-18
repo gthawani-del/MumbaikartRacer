@@ -8,6 +8,7 @@ import { AutoRickshaw } from "./AutoRickshaw";
 import { Environment } from "./Environment";
 import { Input } from "./Input";
 import { Track } from "./Track";
+import theme from "../theme.json";
 
 type Mode = "waiting" | "cinematic" | "drive";
 
@@ -38,7 +39,7 @@ export class App {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.mobile, powerPreference: "high-performance" });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = theme.render.exposure;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 1.15 : 1.65));
@@ -46,7 +47,7 @@ export class App {
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
     pmrem.dispose();
-    this.scene.fog = new THREE.FogExp2(0x132b34, .0048);
+    this.scene.fog = new THREE.FogExp2(theme.render.fogColor, theme.render.fogDensity);
 
     this.track = new Track(this.scene);
     this.auto = new AutoRickshaw(this.scene);
@@ -57,7 +58,12 @@ export class App {
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .19, .46, .91));
+    this.composer.addPass(new UnrealBloomPass(
+      new THREE.Vector2(innerWidth, innerHeight),
+      theme.render.bloomStrength,
+      theme.render.bloomRadius,
+      theme.render.bloomThreshold,
+    ));
     this.composer.addPass(new OutputPass());
 
     this.camera.position.set(-50, 4, 31);
@@ -95,7 +101,8 @@ export class App {
     this.modeTime += delta;
     if (this.mode !== "waiting") this.updateDriving(delta);
     this.updateCamera(delta);
-    this.environment.update(delta, this.auto.group.position);
+    const environmentPose = this.track.getPose(this.progress, this.laneOffset);
+    this.environment.update(delta, this.auto.group.position, this.speed, environmentPose.tangent, environmentPose.side);
     this.updateHud();
     this.updateAudio();
     this.composer.render();
@@ -171,9 +178,9 @@ export class App {
   }
 
   private addLighting(): void {
-    const hemisphere = new THREE.HemisphereLight(0x8ebbd0, 0x251c18, 1.45);
+    const hemisphere = new THREE.HemisphereLight(0x8ebbd0, 0x251c18, .92);
     this.scene.add(hemisphere);
-    const sun = new THREE.DirectionalLight(0xffb676, 3.6);
+    const sun = new THREE.DirectionalLight(0xffb676, 2.05);
     sun.position.set(-72, 52, -38);
     sun.castShadow = true;
     sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
@@ -199,8 +206,7 @@ export class App {
     if (boost) boost.style.width = `${THREE.MathUtils.clamp((this.speed - 45) / 95 * 100, 0, 100)}%`;
     const district = document.getElementById("district");
     if (district) {
-      const names = ["MARINE DRIVE", "FORT DISTRICT", "MONSOON UNDERPASS", "SEAFACE FLYOVER"];
-      district.textContent = names[Math.floor(this.progress * names.length) % names.length];
+      district.textContent = theme.districts[Math.floor(this.progress * theme.districts.length) % theme.districts.length];
     }
   }
 

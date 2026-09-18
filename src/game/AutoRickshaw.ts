@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import theme from "../theme.json";
 
 export class AutoRickshaw {
   readonly group = new THREE.Group();
@@ -132,19 +133,19 @@ export class AutoRickshaw {
 
   private loadHeroModel(): void {
     new GLTFLoader().load(
-      "/assets/mumbai-racing-auto.glb",
+      theme.vehicle.model,
       (gltf) => {
-        const source = gltf.scene.getObjectByName("Racing_Auto_Root");
+        const source = gltf.scene.getObjectByName(theme.vehicle.rootNode);
         if (!source) return;
         source.removeFromParent();
         const model = source.clone(true);
         const bounds = new THREE.Box3().setFromObject(model);
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
-        const scale = 2.18 / Math.max(size.y, .001);
+        const scale = theme.vehicle.height / Math.max(size.y, .001);
         model.scale.setScalar(scale);
         model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
-        model.rotation.y = Math.PI;
+        model.rotation.y = theme.vehicle.headingOffset;
         model.traverse((object) => {
           if (object instanceof THREE.Mesh) {
             object.castShadow = true;

@@ -1,0 +1,34 @@
+{
+  "id": "mumbai-monsoon",
+  "displayName": "Mumbai Monsoon",
+  "districts": ["MARINE DRIVE", "FORT DISTRICT", "MONSOON UNDERPASS", "SEAFACE FLYOVER"],
+  "vehicle": {
+    "model": "/assets/mumbai-racing-auto.glb",
+    "rootNode": "Racing_Auto_Root",
+    "height": 2.18,
+    "headingOffset": 0
+  },
+  "render": {
+    "exposure": 0.86,
+    "bloomStrength": 0.08,
+    "bloomRadius": 0.32,
+    "bloomThreshold": 0.96,
+    "fogColor": "#10262e",
+    "fogDensity": 0.0024
+  },
+  "weather": {
+    "rainMobile": 520,
+    "rainDesktop": 1050,
+    "rainOpacity": 0.2,
+    "sprayParticles": 220,
+    "sprayMinimumSpeed": 24
+  },
+  "palette": {
+    "road": "#172126",
+    "sea": "#0b3545",
+    "skyTop": "#071827",
+    "skyHorizon": "#315366",
+    "skyWarm": "#d87a3e",
+    "accent": "#f4b146"
+  }
+}

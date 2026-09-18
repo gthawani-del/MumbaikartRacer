@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import theme from "../theme.json";
 
 export interface TrackPose {
   position: THREE.Vector3;
@@ -70,12 +71,12 @@ export class Track {
     geometry.computeVertexNormals();
 
     const material = new THREE.MeshPhysicalMaterial({
-      color: 0x242c31,
-      roughness: .24,
-      metalness: .08,
-      clearcoat: .82,
-      clearcoatRoughness: .16,
-      envMapIntensity: 1.25,
+      color: theme.palette.road,
+      roughness: .38,
+      metalness: .04,
+      clearcoat: .55,
+      clearcoatRoughness: .24,
+      envMapIntensity: .85,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
