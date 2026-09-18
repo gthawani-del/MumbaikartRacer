@@ -175,6 +175,7 @@ export class Track {
     const postGeo = new THREE.CylinderGeometry(.15, .2, .82, 10);
     const postMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c9, roughness: .56 });
     const posts = new THREE.InstancedMesh(postGeo, postMat, 110);
+    posts.name = "Procedural promenade barrier";
     const matrix = new THREE.Matrix4();
     for (let i = 0; i < 110; i++) {
       const pose = this.getPose(i / 110, this.width + 1.25);
