@@ -14,6 +14,10 @@
   },
   "environment": {
     "model": "/assets/mumbai-environment-kit.glb",
+    "bookstoreModel": "/assets/bookstore.glb",
+    "bookstoreProgress": 0.055,
+    "bookstoreHeight": 11,
+    "bookstoreOffset": -19.5,
     "buildings": ["ArtDeco_Cream", "ArtDeco_Teal", "ArtDeco_Coral"],
     "promenade": "Promenade_Module",
     "streetLamp": "StreetLamp_Module",

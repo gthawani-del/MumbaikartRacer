@@ -30,6 +30,7 @@ export class Environment {
     this.addStreetLights(this.fallbackScenery, track, compact ? 36 : 64);
     this.addPalms(this.fallbackScenery, track, compact ? 16 : 30);
     this.loadEnvironmentKit(scene, track, compact);
+    this.loadBookstore(scene, track);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
@@ -121,6 +122,39 @@ export class Environment {
         scene.add(authored);
         this.fallbackScenery.visible = false;
       }
+    });
+  }
+
+  private loadBookstore(scene: THREE.Scene, track: Track): void {
+    new GLTFLoader().load(theme.environment.bookstoreModel, (gltf) => {
+      const model = gltf.scene;
+      const bounds = new THREE.Box3().setFromObject(model);
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const scale = theme.environment.bookstoreHeight / Math.max(size.y, .001);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+      model.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            material.metalness = Math.min(material.metalness, .04);
+            material.roughness = Math.max(material.roughness, .5);
+            material.envMapIntensity = .72;
+          }
+        });
+      });
+
+      const landmark = new THREE.Group();
+      landmark.name = "Bombay Books Art Deco facade";
+      landmark.add(model);
+      const pose = track.getPose(theme.environment.bookstoreProgress, theme.environment.bookstoreOffset);
+      landmark.position.copy(pose.position).setY(.04);
+      landmark.rotation.y = Math.atan2(pose.side.x, pose.side.z);
+      scene.add(landmark);
     });
   }
 
