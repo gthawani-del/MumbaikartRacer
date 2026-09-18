@@ -46,7 +46,7 @@ export class App {
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
     pmrem.dispose();
-    this.scene.fog = new THREE.FogExp2(0x102833, .0072);
+    this.scene.fog = new THREE.FogExp2(0x132b34, .0048);
 
     this.track = new Track(this.scene);
     this.auto = new AutoRickshaw(this.scene);
@@ -57,7 +57,7 @@ export class App {
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .38, .72, .82));
+    this.composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .19, .46, .91));
     this.composer.addPass(new OutputPass());
 
     this.camera.position.set(-50, 4, 31);
@@ -152,20 +152,20 @@ export class App {
           .addScaledVector(pose.tangent, THREE.MathUtils.lerp(-1.5, -5.4, sweep))
           .addScaledVector(up, THREE.MathUtils.lerp(1.1, 2.5, sweep));
       } else {
-        desired.copy(this.auto.group.position).addScaledVector(pose.tangent, -6.7).addScaledVector(pose.side, .75).addScaledVector(up, 2.65);
+        desired.copy(this.auto.group.position).addScaledVector(pose.tangent, -7.2).addScaledVector(pose.side, .75).addScaledVector(up, 2.15);
       }
     } else {
       desired.copy(this.auto.group.position)
-        .addScaledVector(pose.tangent, -6.4 - this.speed * .008)
+        .addScaledVector(pose.tangent, -7.1 - this.speed * .009)
         .addScaledVector(pose.side, this.steer * .45)
-        .addScaledVector(up, 2.55);
-      lookAt.addScaledVector(pose.tangent, 4.4 + this.speed * .018);
+        .addScaledVector(up, 2.08);
+      lookAt.addScaledVector(pose.tangent, 5.2 + this.speed * .02);
     }
 
     const follow = 1 - Math.exp(-delta * (this.mode === "cinematic" ? 2.2 : 6.5));
     this.camera.position.lerp(desired, follow);
     this.camera.lookAt(lookAt);
-    const targetFov = this.mode === "drive" ? 51 + Math.max(0, this.speed - 70) * .085 : 48;
+    const targetFov = this.mode === "drive" ? 48 + Math.max(0, this.speed - 70) * .07 : 46;
     this.camera.fov = THREE.MathUtils.damp(this.camera.fov, targetFov, 4, delta);
     this.camera.updateProjectionMatrix();
   }

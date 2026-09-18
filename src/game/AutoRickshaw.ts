@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 export class AutoRickshaw {
   readonly group = new THREE.Group();
   private readonly body = new THREE.Group();
   private readonly frontWheelPivot = new THREE.Group();
   private readonly wheels: THREE.Object3D[] = [];
+  private readonly heroWheels: THREE.Object3D[] = [];
   private readonly headlight: THREE.SpotLight;
   private elapsed = 0;
 
@@ -14,6 +16,7 @@ export class AutoRickshaw {
     this.group.add(this.body);
     this.buildBody();
     this.buildWheels();
+    this.loadHeroModel();
 
     this.headlight = new THREE.SpotLight(0xffd49a, 46, 34, Math.PI / 7, .6, 1.4);
     this.headlight.position.set(0, .78, 1.16);
@@ -33,6 +36,7 @@ export class AutoRickshaw {
     this.elapsed += delta;
     const wheelSpin = speed * delta * .58;
     this.wheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
+    this.heroWheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
     this.frontWheelPivot.rotation.y = steer * .42;
     const engineVibration = Math.sin(this.elapsed * (18 + speed * .08)) * Math.min(speed / 800, .018);
     this.body.position.y = engineVibration + Math.sin(this.elapsed * 5) * .006;
@@ -124,6 +128,44 @@ export class AutoRickshaw {
     this.frontWheelPivot.position.set(0, .37, .95);
     this.frontWheelPivot.add(makeWheel());
     this.body.add(rearLeft, rearRight, this.frontWheelPivot);
+  }
+
+  private loadHeroModel(): void {
+    new GLTFLoader().load(
+      "/assets/mumbai-racing-auto.glb",
+      (gltf) => {
+        const source = gltf.scene.getObjectByName("Racing_Auto_Root");
+        if (!source) return;
+        source.removeFromParent();
+        const model = source.clone(true);
+        const bounds = new THREE.Box3().setFromObject(model);
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+        const scale = 2.18 / Math.max(size.y, .001);
+        model.scale.setScalar(scale);
+        model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+        model.rotation.y = Math.PI;
+        model.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.castShadow = true;
+            object.receiveShadow = true;
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            materials.forEach((material) => {
+              if (material instanceof THREE.MeshStandardMaterial) material.envMapIntensity = 1.2;
+            });
+            if (/^Tyre_/.test(object.name)) this.heroWheels.push(object);
+          }
+        });
+        this.body.traverse((object) => {
+          if (object instanceof THREE.Mesh) object.visible = false;
+        });
+        this.body.add(model);
+      },
+      undefined,
+      () => {
+        // Keep the lightweight procedural auto as a resilient offline fallback.
+      },
+    );
   }
 
   private makePlate(label: string): THREE.Mesh {

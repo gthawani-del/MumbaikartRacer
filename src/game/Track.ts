@@ -29,6 +29,7 @@ export class Track {
     this.group.name = "Maximum City Circuit";
     this.group.add(this.createRoad());
     this.addLaneMarks();
+    this.addRoadEdge();
     this.addPromenadeBarrier();
     scene.add(this.group);
   }
@@ -82,26 +83,45 @@ export class Track {
   }
 
   private addLaneMarks(): void {
-    const white = new THREE.MeshStandardMaterial({ color: 0xd9d6c8, roughness: .35, emissive: 0x26231b });
-    const amber = new THREE.MeshStandardMaterial({ color: 0xf3a53c, roughness: .3, emissive: 0x6b3105, emissiveIntensity: .5 });
-    for (let i = 0; i < 92; i++) {
-      const t = i / 92;
-      const pose = this.getPose(t);
-      const mark = new THREE.Mesh(new THREE.BoxGeometry(.18, .035, 3.1), i % 2 ? white : amber);
-      mark.position.copy(pose.position).setY(.09);
-      mark.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z);
-      this.group.add(mark);
+    const white = new THREE.MeshStandardMaterial({ color: 0xe7e3d6, roughness: .4, emissive: 0x302d24 });
+    for (const lane of [-4, 0, 4]) {
+      for (let i = 0; i < 72; i++) {
+        if (i % 2) continue;
+        const pose = this.getPose(i / 72, lane);
+        const mark = new THREE.Mesh(new THREE.BoxGeometry(.13, .025, 2.7), white);
+        mark.position.copy(pose.position).setY(.085);
+        mark.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z);
+        this.group.add(mark);
+      }
+    }
+  }
+
+  private addRoadEdge(): void {
+    const curbMaterials = [
+      new THREE.MeshStandardMaterial({ color: 0xe6ded0, roughness: .72 }),
+      new THREE.MeshStandardMaterial({ color: 0x2d3334, roughness: .78 }),
+    ];
+    for (let i = 0; i < 150; i++) {
+      const t = i / 150;
+      for (const side of [-1, 1]) {
+        const pose = this.getPose(t, side * (this.width + .4));
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(.48, .22, 2.45), curbMaterials[(i + (side > 0 ? 1 : 0)) % 2]);
+        curb.position.copy(pose.position).setY(.12);
+        curb.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z);
+        curb.receiveShadow = true;
+        this.group.add(curb);
+      }
     }
   }
 
   private addPromenadeBarrier(): void {
-    const postGeo = new THREE.BoxGeometry(.28, 1.05, .28);
-    const postMat = new THREE.MeshStandardMaterial({ color: 0xe2ded3, roughness: .58 });
+    const postGeo = new THREE.CylinderGeometry(.15, .2, .82, 10);
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c9, roughness: .56 });
     const posts = new THREE.InstancedMesh(postGeo, postMat, 110);
     const matrix = new THREE.Matrix4();
     for (let i = 0; i < 110; i++) {
       const pose = this.getPose(i / 110, this.width + 1.25);
-      matrix.makeTranslation(pose.position.x, .55, pose.position.z);
+      matrix.makeTranslation(pose.position.x, .46, pose.position.z);
       posts.setMatrixAt(i, matrix);
     }
     posts.castShadow = true;
