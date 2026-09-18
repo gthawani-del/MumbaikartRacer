@@ -1,5 +1,5 @@
-Asset: Asphalt 033 (1K JPG)
-Source: https://ambientcg.com/view?id=Asphalt033
+Asset: Asphalt 020 L (1K JPG)
+Source: https://ambientcg.com/view?id=Asphalt020L
 Creator: ambientCG
 License: Creative Commons CC0 1.0 Universal
 License URL: https://creativecommons.org/publicdomain/zero/1.0/

@@ -74,18 +74,18 @@ export class Track {
 
     const { colorMap, normalMap, roughnessMap, aoMap } = this.loadAsphaltTextures();
     const material = new THREE.MeshPhysicalMaterial({
-      color: 0x8b9290,
+      color: 0xb9bfbc,
       map: colorMap,
       normalMap,
-      normalScale: new THREE.Vector2(.62, .62),
+      normalScale: new THREE.Vector2(.38, .38),
       roughnessMap,
       aoMap,
-      aoMapIntensity: .72,
-      roughness: .88,
+      aoMapIntensity: .48,
+      roughness: .84,
       metalness: 0,
-      clearcoat: .14,
-      clearcoatRoughness: .24,
-      envMapIntensity: .82,
+      clearcoat: .1,
+      clearcoatRoughness: .34,
+      envMapIntensity: .72,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
@@ -107,20 +107,20 @@ export class Track {
     colorMap.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [colorMap, normalMap, roughnessMap, aoMap]) {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      // The scan covers 2.5 m square. These repeats keep aggregate circular
+      // The scan covers 4.6 m square. These repeats keep aggregate circular
       // instead of stretching it along the circuit's long UV axis.
-      texture.repeat.set(9.6, 7);
-      texture.anisotropy = 8;
+      texture.repeat.set(5.22, 3.85);
+      texture.anisotropy = 16;
     }
     return { colorMap, normalMap, roughnessMap, aoMap };
   }
 
   private addWetPatches(): void {
     const materials = [
-      new THREE.MeshPhysicalMaterial({ color: 0x071b21, roughness: .055, metalness: .14, clearcoat: 1, clearcoatRoughness: .02, transparent: true, opacity: .78, depthWrite: false, envMapIntensity: 1.75 }),
-      new THREE.MeshPhysicalMaterial({ color: 0x10282e, roughness: .095, metalness: .09, clearcoat: 1, clearcoatRoughness: .04, transparent: true, opacity: .68, depthWrite: false, envMapIntensity: 1.5 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x101b1e, roughness: .1, metalness: 0, clearcoat: 1, clearcoatRoughness: .07, transparent: true, opacity: .38, depthWrite: false, envMapIntensity: .72 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x182528, roughness: .16, metalness: 0, clearcoat: .9, clearcoatRoughness: .11, transparent: true, opacity: .29, depthWrite: false, envMapIntensity: .58 }),
     ];
-    for (let i = 0; i < 54; i++) {
+    for (let i = 0; i < 44; i++) {
       const lane = [-7.1, -3.5, 1.8, 6.4][i % 4] + Math.sin(i * 2.17) * .7;
       const pose = this.getPose((i * .071 + .018) % 1, lane);
       const points: THREE.Vector2[] = [];
@@ -130,7 +130,7 @@ export class Track {
         points.push(new THREE.Vector2(Math.cos(angle) * irregularity, Math.sin(angle) * irregularity));
       }
       const patch = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(points)), materials[i % materials.length]);
-      patch.scale.set(1.45 + (i % 6) * .46, .56 + (i % 4) * .2, 1);
+      patch.scale.set(.9 + (i % 6) * .31, .32 + (i % 4) * .14, 1);
       patch.rotation.x = -Math.PI / 2;
       patch.rotation.z = -Math.atan2(pose.tangent.x, pose.tangent.z);
       patch.position.copy(pose.position).setY(.058);
