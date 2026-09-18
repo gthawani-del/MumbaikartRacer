@@ -68,67 +68,51 @@ export class Track {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setAttribute("uv1", new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
-    const { colorMap, roughnessMap } = this.createAsphaltTextures();
+    const { colorMap, normalMap, roughnessMap, aoMap } = this.loadAsphaltTextures();
     const material = new THREE.MeshPhysicalMaterial({
-      color: 0x354043,
+      color: 0x8b9290,
       map: colorMap,
+      normalMap,
+      normalScale: new THREE.Vector2(.62, .62),
       roughnessMap,
-      roughness: .74,
-      metalness: .015,
-      clearcoat: .24,
-      clearcoatRoughness: .28,
-      envMapIntensity: .68,
+      aoMap,
+      aoMapIntensity: .72,
+      roughness: .88,
+      metalness: 0,
+      clearcoat: .14,
+      clearcoatRoughness: .24,
+      envMapIntensity: .82,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
     return road;
   }
 
-  private createAsphaltTextures(): { colorMap: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture } {
-    const size = 512;
-    const colorCanvas = document.createElement("canvas");
-    const roughnessCanvas = document.createElement("canvas");
-    colorCanvas.width = colorCanvas.height = roughnessCanvas.width = roughnessCanvas.height = size;
-    const colorContext = colorCanvas.getContext("2d")!;
-    const roughnessContext = roughnessCanvas.getContext("2d")!;
-    const colorImage = colorContext.createImageData(size, size);
-    const roughnessImage = roughnessContext.createImageData(size, size);
-    let seed = 18427;
-    const random = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-
-    for (let i = 0; i < size * size; i++) {
-      const grain = random();
-      const aggregate = random() > .986 ? 26 + random() * 24 : 0;
-      const value = Math.round(24 + grain * 18 + aggregate);
-      const colorOffset = i * 4;
-      colorImage.data[colorOffset] = value;
-      colorImage.data[colorOffset + 1] = value + 3;
-      colorImage.data[colorOffset + 2] = value + 4;
-      colorImage.data[colorOffset + 3] = 255;
-      const roughness = Math.round(154 + grain * 74 - aggregate * 1.4);
-      roughnessImage.data[colorOffset] = roughness;
-      roughnessImage.data[colorOffset + 1] = roughness;
-      roughnessImage.data[colorOffset + 2] = roughness;
-      roughnessImage.data[colorOffset + 3] = 255;
-    }
-    colorContext.putImageData(colorImage, 0, 0);
-    roughnessContext.putImageData(roughnessImage, 0, 0);
-
-    const colorMap = new THREE.CanvasTexture(colorCanvas);
+  private loadAsphaltTextures(): {
+    colorMap: THREE.Texture;
+    normalMap: THREE.Texture;
+    roughnessMap: THREE.Texture;
+    aoMap: THREE.Texture;
+  } {
+    const loader = new THREE.TextureLoader();
+    const root = "/assets/textures/asphalt-033/";
+    const colorMap = loader.load(`${root}color.jpg`);
+    const normalMap = loader.load(`${root}normal-gl.jpg`);
+    const roughnessMap = loader.load(`${root}roughness.jpg`);
+    const aoMap = loader.load(`${root}ambient-occlusion.jpg`);
     colorMap.colorSpace = THREE.SRGBColorSpace;
-    const roughnessMap = new THREE.CanvasTexture(roughnessCanvas);
-    for (const texture of [colorMap, roughnessMap]) {
+    for (const texture of [colorMap, normalMap, roughnessMap, aoMap]) {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(7, 1);
+      // The scan covers 2.5 m square. These repeats keep aggregate circular
+      // instead of stretching it along the circuit's long UV axis.
+      texture.repeat.set(9.6, 7);
       texture.anisotropy = 8;
     }
-    return { colorMap, roughnessMap };
+    return { colorMap, normalMap, roughnessMap, aoMap };
   }
 
   private addWetPatches(): void {

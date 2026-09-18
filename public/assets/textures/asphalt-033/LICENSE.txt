@@ -1,0 +1,8 @@
+Asset: Asphalt 033 (1K JPG)
+Source: https://ambientcg.com/view?id=Asphalt033
+Creator: ambientCG
+License: Creative Commons CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The asset may be used, modified, and redistributed, including commercially,
+without attribution. This notice is retained to document the asset provenance.
