@@ -30,7 +30,6 @@ export class Environment {
     this.addStreetLights(this.fallbackScenery, track, compact ? 36 : 64);
     this.addPalms(this.fallbackScenery, track, compact ? 16 : 30);
     this.loadEnvironmentKit(scene, track, compact);
-    this.loadPromenade(scene, track, compact);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
@@ -81,6 +80,16 @@ export class Environment {
         authored.add(building);
       }
 
+      const promenadeCount = compact ? 16 : 26;
+      for (let i = 0; i < promenadeCount; i++) {
+        const module = cloneModule(theme.environment.promenade, .56);
+        if (!module) continue;
+        const pose = track.getPose(i / promenadeCount, track.width + 3.35);
+        module.position.copy(pose.position);
+        module.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), pose.tangent);
+        authored.add(module);
+      }
+
       const propCount = compact ? 13 : 22;
       for (let i = 0; i < propCount; i++) {
         const palm = cloneModule(theme.environment.palm, .82);
@@ -112,62 +121,6 @@ export class Environment {
         scene.add(authored);
         this.fallbackScenery.visible = false;
       }
-    });
-  }
-
-  private loadPromenade(scene: THREE.Scene, track: Track, compact: boolean): void {
-    new GLTFLoader().load(theme.environment.promenadeModel, (gltf) => {
-      gltf.scene.updateMatrixWorld(true);
-      const sourceMeshes: THREE.Mesh[] = [];
-      gltf.scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) sourceMeshes.push(object);
-      });
-      if (sourceMeshes.length === 0) return;
-
-      const promenade = new THREE.Group();
-      promenade.name = "Marine Drive promenade";
-      const count = compact
-        ? theme.environment.promenadeCountMobile
-        : theme.environment.promenadeCountDesktop;
-
-      for (const source of sourceMeshes) {
-        const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld);
-        geometry.computeBoundingBox();
-        const bounds = geometry.boundingBox!;
-        const materials = (Array.isArray(source.material) ? source.material : [source.material]).map((item) => {
-          const material = item.clone();
-          if (material instanceof THREE.MeshStandardMaterial) {
-            material.metalness = .02;
-            material.roughness = Math.max(.62, material.roughness);
-            material.envMapIntensity = .7;
-          }
-          return material;
-        });
-        const instances = new THREE.InstancedMesh(
-          geometry,
-          materials.length === 1 ? materials[0] : materials,
-          count,
-        );
-        const matrix = new THREE.Matrix4();
-        const quaternion = new THREE.Quaternion();
-        const scale = new THREE.Vector3().setScalar(theme.environment.promenadeScale);
-        const position = new THREE.Vector3();
-        for (let i = 0; i < count; i++) {
-          const pose = track.getPose(i / count, track.width + theme.environment.promenadeOffset);
-          position.copy(pose.position).setY(-bounds.min.y * theme.environment.promenadeScale + .045);
-          quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), pose.tangent);
-          matrix.compose(position, quaternion, scale);
-          instances.setMatrixAt(i, matrix);
-        }
-        instances.instanceMatrix.needsUpdate = true;
-        instances.castShadow = true;
-        instances.receiveShadow = true;
-        promenade.add(instances);
-      }
-
-      scene.add(promenade);
-      const fallback = scene.getObjectByName("Procedural promenade barrier");
-      if (fallback) fallback.visible = false;
     });
   }
 

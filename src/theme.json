@@ -14,11 +14,6 @@
   },
   "environment": {
     "model": "/assets/mumbai-environment-kit.glb",
-    "promenadeModel": "/assets/marine-drive-promenade.glb",
-    "promenadeScale": 5,
-    "promenadeOffset": 2.65,
-    "promenadeCountMobile": 48,
-    "promenadeCountDesktop": 64,
     "buildings": ["ArtDeco_Cream", "ArtDeco_Teal", "ArtDeco_Coral"],
     "promenade": "Promenade_Module",
     "streetLamp": "StreetLamp_Module",
