@@ -3,10 +3,13 @@
   "displayName": "Mumbai Monsoon",
   "districts": ["MARINE DRIVE", "FORT DISTRICT", "MONSOON UNDERPASS", "SEAFACE FLYOVER"],
   "vehicle": {
-    "model": "/assets/mumbai-racing-auto.glb",
-    "rootNode": "Racing_Auto_Root",
-    "height": 2.18,
-    "headingOffset": 3.141592653589793,
+    "model": "/assets/auto-kart.glb",
+    "rootNode": "AutoKartRoot",
+    "fallbackModel": "/assets/mumbai-racing-auto.glb",
+    "fallbackRootNode": "Racing_Auto_Root",
+    "height": 1.75,
+    "headingOffset": 1.5707963267948966,
+    "fallbackHeadingOffset": 3.141592653589793,
     "groundOffset": -0.04
   },
   "environment": {

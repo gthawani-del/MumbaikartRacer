@@ -132,10 +132,9 @@ export class AutoRickshaw {
   }
 
   private loadHeroModel(): void {
-    new GLTFLoader().load(
-      theme.vehicle.model,
-      (gltf) => {
-        const source = gltf.scene.getObjectByName(theme.vehicle.rootNode);
+    const loader = new GLTFLoader();
+    const attach = (gltf: Awaited<ReturnType<GLTFLoader["loadAsync"]>>, rootNode: string, headingOffset: number) => {
+        const source = gltf.scene.getObjectByName(rootNode);
         if (!source) return;
         source.removeFromParent();
         const model = source.clone(true);
@@ -149,7 +148,7 @@ export class AutoRickshaw {
           -bounds.min.y * scale + theme.vehicle.groundOffset,
           -center.z * scale,
         );
-        model.rotation.y = theme.vehicle.headingOffset;
+        model.rotation.y = headingOffset;
         model.traverse((object) => {
           if (object instanceof THREE.Mesh) {
             object.castShadow = true;
@@ -165,12 +164,15 @@ export class AutoRickshaw {
           if (object instanceof THREE.Mesh) object.visible = false;
         });
         this.body.add(model);
-      },
-      undefined,
-      () => {
-        // Keep the lightweight procedural auto as a resilient offline fallback.
-      },
-    );
+    };
+
+    loader.loadAsync(theme.vehicle.model)
+      .then((gltf) => attach(gltf, theme.vehicle.rootNode, theme.vehicle.headingOffset))
+      .catch(() => loader.loadAsync(theme.vehicle.fallbackModel)
+        .then((gltf) => attach(gltf, theme.vehicle.fallbackRootNode, theme.vehicle.fallbackHeadingOffset))
+        .catch(() => {
+          // Keep the lightweight procedural auto as the final offline fallback.
+        }));
   }
 
   private makePlate(label: string): THREE.Mesh {
