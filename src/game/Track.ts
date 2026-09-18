@@ -133,17 +133,17 @@ export class Track {
 
   private addWetPatches(): void {
     const materials = [
-      new THREE.MeshPhysicalMaterial({ color: 0x15272b, roughness: .12, metalness: .08, clearcoat: 1, clearcoatRoughness: .06, transparent: true, opacity: .34, depthWrite: false }),
-      new THREE.MeshPhysicalMaterial({ color: 0x263437, roughness: .2, metalness: .04, clearcoat: .9, clearcoatRoughness: .1, transparent: true, opacity: .24, depthWrite: false }),
+      new THREE.MeshPhysicalMaterial({ color: 0x0c2229, roughness: .06, metalness: .12, clearcoat: 1, clearcoatRoughness: .025, transparent: true, opacity: .58, depthWrite: false, envMapIntensity: 1.55 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x1a3035, roughness: .11, metalness: .08, clearcoat: 1, clearcoatRoughness: .045, transparent: true, opacity: .46, depthWrite: false, envMapIntensity: 1.35 }),
     ];
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 54; i++) {
       const lane = [-7.1, -3.5, 1.8, 6.4][i % 4] + Math.sin(i * 2.17) * .7;
       const pose = this.getPose((i * .071 + .018) % 1, lane);
       const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 28), materials[i % materials.length]);
-      patch.scale.set(1.1 + (i % 5) * .38, .48 + (i % 3) * .16, 1);
+      patch.scale.set(1.45 + (i % 6) * .46, .56 + (i % 4) * .2, 1);
       patch.rotation.x = -Math.PI / 2;
       patch.rotation.z = -Math.atan2(pose.tangent.x, pose.tangent.z);
-      patch.position.copy(pose.position).setY(.052);
+      patch.position.copy(pose.position).setY(.058);
       patch.renderOrder = 1;
       this.group.add(patch);
     }

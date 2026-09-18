@@ -40,10 +40,10 @@ export class AutoRickshaw {
     this.wheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
     this.heroWheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
     this.frontWheelPivot.rotation.y = steer * .42;
-    const engineVibration = Math.sin(this.elapsed * (18 + speed * .08)) * Math.min(speed / 800, .018);
-    this.body.position.y = engineVibration + Math.sin(this.elapsed * 5) * .006;
-    this.body.rotation.z = THREE.MathUtils.lerp(this.body.rotation.z, -steer * .105 - drift * .14, 1 - Math.exp(-delta * 8));
-    this.body.rotation.x = THREE.MathUtils.lerp(this.body.rotation.x, -Math.min(speed / 3600, .035), 1 - Math.exp(-delta * 4));
+    const engineVibration = Math.sin(this.elapsed * (15 + speed * .035)) * Math.min(speed / 18000, .0028);
+    this.body.position.y = THREE.MathUtils.damp(this.body.position.y, engineVibration, 12, delta);
+    this.body.rotation.z = THREE.MathUtils.lerp(this.body.rotation.z, -steer * .072 - drift * .095, 1 - Math.exp(-delta * 7));
+    this.body.rotation.x = THREE.MathUtils.lerp(this.body.rotation.x, -Math.min(speed / 8000, .016), 1 - Math.exp(-delta * 3.5));
     this.headlight.intensity = 42 + Math.sin(this.elapsed * 13) * .8;
   }
 
