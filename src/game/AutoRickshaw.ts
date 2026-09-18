@@ -134,9 +134,9 @@ export class AutoRickshaw {
   private loadHeroModel(): void {
     const loader = new GLTFLoader();
     const attach = (gltf: Awaited<ReturnType<GLTFLoader["loadAsync"]>>, rootNode: string, headingOffset: number) => {
-        const source = gltf.scene.getObjectByName(rootNode);
-        if (!source) return;
-        source.removeFromParent();
+        // Meshy exports do not always preserve node names. Use the complete
+        // imported scene when the configured root is absent.
+        const source = gltf.scene.getObjectByName(rootNode) ?? gltf.scene;
         const model = source.clone(true);
         const bounds = new THREE.Box3().setFromObject(model);
         const size = bounds.getSize(new THREE.Vector3());
