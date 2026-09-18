@@ -10,7 +10,7 @@
     "height": 1.75,
     "headingOffset": 1.5707963267948966,
     "fallbackHeadingOffset": 3.141592653589793,
-    "groundOffset": -0.095
+    "groundOffset": -0.04
   },
   "environment": {
     "model": "/assets/mumbai-environment-kit.glb",

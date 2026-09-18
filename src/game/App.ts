@@ -219,12 +219,13 @@ export class App {
       oscillator.type = "sawtooth";
       oscillator.frequency.value = 45;
       filter.type = "lowpass";
-      filter.frequency.value = 320;
-      filter.Q.value = 4;
+      filter.frequency.value = 560;
+      filter.Q.value = 2.2;
       gain.gain.value = .0001;
       oscillator.connect(filter).connect(gain).connect(this.audioContext.destination);
       oscillator.start();
-      gain.gain.exponentialRampToValueAtTime(.045, this.audioContext.currentTime + .6);
+      void this.audioContext.resume();
+      gain.gain.exponentialRampToValueAtTime(.11, this.audioContext.currentTime + .6);
       this.engineOscillator = oscillator;
       this.engineGain = gain;
     } catch {
@@ -236,7 +237,7 @@ export class App {
     if (!this.audioContext || !this.engineOscillator || !this.engineGain) return;
     const now = this.audioContext.currentTime;
     this.engineOscillator.frequency.setTargetAtTime(42 + this.speed * 1.35, now, .06);
-    this.engineGain.gain.setTargetAtTime(.025 + this.speed / 4400, now, .08);
+    this.engineGain.gain.setTargetAtTime(.075 + this.speed / 1800, now, .08);
   }
 
   private resize(): void {
