@@ -31,6 +31,8 @@ export class Environment {
     this.addPalms(this.fallbackScenery, track, compact ? 16 : 30);
     this.loadEnvironmentKit(scene, track, compact);
     this.loadBookstore(scene, track);
+    this.loadStreetlights(scene, track, compact ? 22 : 38);
+    this.loadPalms(scene, track, compact ? 12 : 22);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
@@ -91,24 +93,6 @@ export class Environment {
         authored.add(module);
       }
 
-      const propCount = compact ? 13 : 22;
-      for (let i = 0; i < propCount; i++) {
-        const palm = cloneModule(theme.environment.palm, .82);
-        if (palm) {
-          const pose = track.getPose((i / propCount + .018) % 1, track.width + 5.8);
-          palm.position.copy(pose.position);
-          authored.add(palm);
-        }
-        if (i % 2 === 0) {
-          const lamp = cloneModule(theme.environment.streetLamp, .94);
-          if (lamp) {
-            const pose = track.getPose((i / propCount + .045) % 1, track.width + 1.8);
-            lamp.position.copy(pose.position);
-            authored.add(lamp);
-          }
-        }
-      }
-
       for (const progress of [.14, .47, .78]) {
         const stop = cloneModule(theme.environment.busStop, .86);
         if (!stop) continue;
@@ -156,6 +140,87 @@ export class Environment {
       landmark.rotation.y = Math.atan2(pose.side.x, pose.side.z);
       scene.add(landmark);
     });
+  }
+
+  private loadStreetlights(scene: THREE.Scene, track: Track, count: number): void {
+    new GLTFLoader().load(theme.environment.streetlightModel, (gltf) => {
+      const source = this.firstMesh(gltf.scene);
+      if (!source) return;
+      const bounds = new THREE.Box3().setFromObject(source);
+      const size = bounds.getSize(new THREE.Vector3());
+      const scale = theme.environment.streetlightHeight / Math.max(size.y, .001);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x222a2d,
+        metalness: .72,
+        roughness: .32,
+      });
+      const instances = new THREE.InstancedMesh(source.geometry, material, count * 2);
+      instances.name = "Marine Drive streetlights";
+      instances.castShadow = true;
+      instances.receiveShadow = true;
+      const matrix = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      const sizeVector = new THREE.Vector3(scale, scale, scale);
+      let index = 0;
+      for (let i = 0; i < count; i++) {
+        for (const side of [-1, 1]) {
+          const pose = track.getPose((i / count + .012) % 1, side * (track.width + 2.2));
+          position.copy(pose.position).setY(-bounds.min.y * scale + .03);
+          quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-side * pose.side.x, -side * pose.side.z));
+          matrix.compose(position, quaternion, sizeVector);
+          instances.setMatrixAt(index++, matrix);
+          if (i % 10 === 0 && side === 1) {
+            const glow = new THREE.PointLight(0xffb46b, 7, 15, 2);
+            glow.position.copy(pose.position).setY(theme.environment.streetlightHeight - .3);
+            scene.add(glow);
+          }
+        }
+      }
+      instances.instanceMatrix.needsUpdate = true;
+      scene.add(instances);
+    });
+  }
+
+  private loadPalms(scene: THREE.Scene, track: Track, count: number): void {
+    new GLTFLoader().load(theme.environment.palmModel, (gltf) => {
+      const source = this.firstMesh(gltf.scene);
+      if (!source) return;
+      const bounds = new THREE.Box3().setFromObject(source);
+      const size = bounds.getSize(new THREE.Vector3());
+      const scale = theme.environment.palmHeight / Math.max(size.y, .001);
+      const material = Array.isArray(source.material) ? source.material[0] : source.material;
+      if (material instanceof THREE.MeshStandardMaterial) {
+        material.roughness = Math.max(material.roughness, .62);
+        material.metalness = Math.min(material.metalness, .02);
+        material.side = THREE.DoubleSide;
+      }
+      const instances = new THREE.InstancedMesh(source.geometry, material, count);
+      instances.name = "Marine Drive palms";
+      instances.castShadow = true;
+      instances.receiveShadow = true;
+      const matrix = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      for (let i = 0; i < count; i++) {
+        const pose = track.getPose((i / count + .035) % 1, track.width + 5.7 + (i % 3) * .7);
+        position.copy(pose.position).setY(-bounds.min.y * scale + .02);
+        quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (i * 2.399963) % (Math.PI * 2));
+        const variation = scale * (.9 + (i % 5) * .04);
+        matrix.compose(position, quaternion, new THREE.Vector3(variation, variation, variation));
+        instances.setMatrixAt(i, matrix);
+      }
+      instances.instanceMatrix.needsUpdate = true;
+      scene.add(instances);
+    });
+  }
+
+  private firstMesh(root: THREE.Object3D): THREE.Mesh | null {
+    let result: THREE.Mesh | null = null;
+    root.traverse((object) => {
+      if (!result && object instanceof THREE.Mesh) result = object;
+    });
+    return result;
   }
 
   update(delta: number, focus: THREE.Vector3, speed: number, tangent: THREE.Vector3, side: THREE.Vector3): void {
