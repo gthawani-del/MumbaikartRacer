@@ -144,7 +144,11 @@ export class AutoRickshaw {
         const center = bounds.getCenter(new THREE.Vector3());
         const scale = theme.vehicle.height / Math.max(size.y, .001);
         model.scale.setScalar(scale);
-        model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+        model.position.set(
+          -center.x * scale,
+          -bounds.min.y * scale + theme.vehicle.groundOffset,
+          -center.z * scale,
+        );
         model.rotation.y = theme.vehicle.headingOffset;
         model.traverse((object) => {
           if (object instanceof THREE.Mesh) {

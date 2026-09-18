@@ -163,10 +163,10 @@ export class App {
       }
     } else {
       desired.copy(this.auto.group.position)
-        .addScaledVector(pose.tangent, -7.1 - this.speed * .009)
+        .addScaledVector(pose.tangent, -6.25 - this.speed * .007)
         .addScaledVector(pose.side, this.steer * .45)
-        .addScaledVector(up, 2.08);
-      lookAt.addScaledVector(pose.tangent, 5.2 + this.speed * .02);
+        .addScaledVector(up, 1.92);
+      lookAt.addScaledVector(pose.tangent, 5.5 + this.speed * .018);
     }
 
     const follow = 1 - Math.exp(-delta * (this.mode === "cinematic" ? 2.2 : 6.5));

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Track } from "./Track";
 import theme from "../theme.json";
 
@@ -15,6 +16,7 @@ export class Environment {
   private sprayBudget = 0;
   private readonly traffic: Array<{ vehicle: THREE.Group; progress: number; offset: number; speed: number }> = [];
   private readonly track: Track;
+  private readonly fallbackScenery = new THREE.Group();
   private elapsed = 0;
 
   constructor(scene: THREE.Scene, track: Track, compact: boolean) {
@@ -22,9 +24,12 @@ export class Environment {
     this.addSky(scene);
     this.addWater(scene);
     this.water = scene.getObjectByName("Arabian Sea") as THREE.Mesh;
-    this.addCity(scene, track, compact ? 75 : 145);
-    this.addStreetLights(scene, track, compact ? 36 : 64);
-    this.addPalms(scene, track, compact ? 16 : 30);
+    this.fallbackScenery.name = "Procedural scenery fallback";
+    scene.add(this.fallbackScenery);
+    this.addCity(this.fallbackScenery, track, compact ? 75 : 145);
+    this.addStreetLights(this.fallbackScenery, track, compact ? 36 : 64);
+    this.addPalms(this.fallbackScenery, track, compact ? 16 : 30);
+    this.loadEnvironmentKit(scene, track, compact);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
@@ -38,6 +43,85 @@ export class Environment {
     this.sprayVelocity = spray.velocity;
     this.sprayLife = spray.life;
     scene.add(this.spray);
+  }
+
+  private loadEnvironmentKit(scene: THREE.Scene, track: Track, compact: boolean): void {
+    new GLTFLoader().load(theme.environment.model, (gltf) => {
+      const authored = new THREE.Group();
+      authored.name = "Authored Mumbai environment";
+      const cloneModule = (name: string, scale = 1) => {
+        const source = gltf.scene.getObjectByName(name);
+        if (!source) return null;
+        const module = source.clone(true);
+        module.scale.setScalar(scale);
+        module.updateMatrixWorld(true);
+        const bounds = new THREE.Box3().setFromObject(module);
+        const center = bounds.getCenter(new THREE.Vector3());
+        module.position.x -= center.x;
+        module.position.y -= bounds.min.y;
+        module.position.z -= center.z;
+        module.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.castShadow = true;
+            object.receiveShadow = true;
+          }
+        });
+        return module;
+      };
+
+      const buildingCount = compact ? 14 : 24;
+      for (let i = 0; i < buildingCount; i++) {
+        const name = theme.environment.buildings[i % theme.environment.buildings.length];
+        const building = cloneModule(name, .82 + (i % 3) * .06);
+        if (!building) continue;
+        const pose = track.getPose((i / buildingCount + .01) % 1, -(track.width + 9.2 + i % 3));
+        building.position.copy(pose.position);
+        building.rotation.y = Math.atan2(pose.side.x, pose.side.z);
+        authored.add(building);
+      }
+
+      const promenadeCount = compact ? 16 : 26;
+      for (let i = 0; i < promenadeCount; i++) {
+        const module = cloneModule(theme.environment.promenade, .56);
+        if (!module) continue;
+        const pose = track.getPose(i / promenadeCount, track.width + 3.35);
+        module.position.copy(pose.position);
+        module.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), pose.tangent);
+        authored.add(module);
+      }
+
+      const propCount = compact ? 13 : 22;
+      for (let i = 0; i < propCount; i++) {
+        const palm = cloneModule(theme.environment.palm, .82);
+        if (palm) {
+          const pose = track.getPose((i / propCount + .018) % 1, track.width + 5.8);
+          palm.position.copy(pose.position);
+          authored.add(palm);
+        }
+        if (i % 2 === 0) {
+          const lamp = cloneModule(theme.environment.streetLamp, .94);
+          if (lamp) {
+            const pose = track.getPose((i / propCount + .045) % 1, track.width + 1.8);
+            lamp.position.copy(pose.position);
+            authored.add(lamp);
+          }
+        }
+      }
+
+      for (const progress of [.14, .47, .78]) {
+        const stop = cloneModule(theme.environment.busStop, .86);
+        if (!stop) continue;
+        const pose = track.getPose(progress, -(track.width + 3.1));
+        stop.position.copy(pose.position);
+        stop.rotation.y = Math.atan2(pose.side.x, pose.side.z);
+        authored.add(stop);
+      }
+
+      if (authored.children.length > 0) {
+        scene.add(authored);
+        this.fallbackScenery.visible = false;
+      }
+    });
   }
 
   update(delta: number, focus: THREE.Vector3, speed: number, tangent: THREE.Vector3, side: THREE.Vector3): void {
@@ -197,7 +281,7 @@ export class Environment {
     scene.add(water);
   }
 
-  private addCity(scene: THREE.Scene, track: Track, count: number): void {
+  private addCity(scene: THREE.Object3D, track: Track, count: number): void {
     const palette = [0xc3b69d, 0xa7b3af, 0xd0b9a3, 0x9faeb2, 0xbca59a];
     const glass = new THREE.MeshStandardMaterial({ color: 0x233c43, emissive: 0xffa85b, emissiveIntensity: 1.35, roughness: .3, metalness: .1 });
     const trim = new THREE.MeshStandardMaterial({ color: 0xe5ddcc, roughness: .68 });
@@ -263,7 +347,7 @@ export class Environment {
     }
   }
 
-  private addStreetLights(scene: THREE.Scene, track: Track, count: number): void {
+  private addStreetLights(scene: THREE.Object3D, track: Track, count: number): void {
     const poleGeo = new THREE.CylinderGeometry(.09, .13, 4.8, 8);
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x273237, metalness: .62, roughness: .4 });
     const poles = new THREE.InstancedMesh(poleGeo, poleMat, count * 2);
@@ -291,7 +375,7 @@ export class Environment {
     scene.add(poles, lamps);
   }
 
-  private addPalms(scene: THREE.Scene, track: Track, count: number): void {
+  private addPalms(scene: THREE.Object3D, track: Track, count: number): void {
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x57402f, roughness: .85 });
     const leafMat = new THREE.MeshStandardMaterial({ color: 0x1d573e, roughness: .78, side: THREE.DoubleSide });
     for (let i = 0; i < count; i++) {

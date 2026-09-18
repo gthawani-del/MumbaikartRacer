@@ -6,7 +6,16 @@
     "model": "/assets/mumbai-racing-auto.glb",
     "rootNode": "Racing_Auto_Root",
     "height": 2.18,
-    "headingOffset": 0
+    "headingOffset": 3.141592653589793,
+    "groundOffset": -0.04
+  },
+  "environment": {
+    "model": "/assets/mumbai-environment-kit.glb",
+    "buildings": ["ArtDeco_Cream", "ArtDeco_Teal", "ArtDeco_Coral"],
+    "promenade": "Promenade_Module",
+    "streetLamp": "StreetLamp_Module",
+    "palm": "Palm_Module",
+    "busStop": "BusStop_Module"
   },
   "render": {
     "exposure": 0.86,
