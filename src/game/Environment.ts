@@ -27,12 +27,10 @@ export class Environment {
     this.fallbackScenery.name = "Procedural scenery fallback";
     scene.add(this.fallbackScenery);
     this.addCity(this.fallbackScenery, track, compact ? 75 : 145);
-    this.addStreetLights(this.fallbackScenery, track, compact ? 36 : 64);
-    this.addPalms(this.fallbackScenery, track, compact ? 16 : 30);
     this.loadEnvironmentKit(scene, track, compact);
     this.loadBookstore(scene, track);
-    this.loadStreetlights(scene, track, compact ? 22 : 38);
-    this.loadPalms(scene, track, compact ? 12 : 22);
+    this.loadStreetlights(scene, track, compact ? 14 : 24);
+    this.loadPalms(scene, track, compact ? 6 : 10);
     this.addHeroSign(scene, track);
     this.addTraffic(scene, compact ? 7 : 12);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
@@ -189,12 +187,14 @@ export class Environment {
       const bounds = new THREE.Box3().setFromObject(source);
       const size = bounds.getSize(new THREE.Vector3());
       const scale = theme.environment.palmHeight / Math.max(size.y, .001);
-      const material = Array.isArray(source.material) ? source.material[0] : source.material;
-      if (material instanceof THREE.MeshStandardMaterial) {
-        material.roughness = Math.max(material.roughness, .62);
-        material.metalness = Math.min(material.metalness, .02);
-        material.side = THREE.DoubleSide;
-      }
+      const sourceMaterial = Array.isArray(source.material) ? source.material[0] : source.material;
+      const map = sourceMaterial instanceof THREE.MeshStandardMaterial ? sourceMaterial.map : null;
+      if (map) map.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.MeshLambertMaterial({
+        map,
+        color: 0xa9b99a,
+        side: THREE.DoubleSide,
+      });
       const instances = new THREE.InstancedMesh(source.geometry, material, count);
       instances.name = "Marine Drive palms";
       instances.castShadow = true;
