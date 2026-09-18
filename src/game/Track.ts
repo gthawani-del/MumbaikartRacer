@@ -73,14 +73,14 @@ export class Track {
 
     const { colorMap, roughnessMap } = this.createAsphaltTextures();
     const material = new THREE.MeshPhysicalMaterial({
-      color: 0x6f7778,
+      color: 0x354043,
       map: colorMap,
       roughnessMap,
-      roughness: .82,
-      metalness: .04,
-      clearcoat: .42,
-      clearcoatRoughness: .18,
-      envMapIntensity: 1.05,
+      roughness: .74,
+      metalness: .015,
+      clearcoat: .24,
+      clearcoatRoughness: .28,
+      envMapIntensity: .68,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
@@ -133,13 +133,19 @@ export class Track {
 
   private addWetPatches(): void {
     const materials = [
-      new THREE.MeshPhysicalMaterial({ color: 0x0c2229, roughness: .06, metalness: .12, clearcoat: 1, clearcoatRoughness: .025, transparent: true, opacity: .58, depthWrite: false, envMapIntensity: 1.55 }),
-      new THREE.MeshPhysicalMaterial({ color: 0x1a3035, roughness: .11, metalness: .08, clearcoat: 1, clearcoatRoughness: .045, transparent: true, opacity: .46, depthWrite: false, envMapIntensity: 1.35 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x071b21, roughness: .055, metalness: .14, clearcoat: 1, clearcoatRoughness: .02, transparent: true, opacity: .78, depthWrite: false, envMapIntensity: 1.75 }),
+      new THREE.MeshPhysicalMaterial({ color: 0x10282e, roughness: .095, metalness: .09, clearcoat: 1, clearcoatRoughness: .04, transparent: true, opacity: .68, depthWrite: false, envMapIntensity: 1.5 }),
     ];
     for (let i = 0; i < 54; i++) {
       const lane = [-7.1, -3.5, 1.8, 6.4][i % 4] + Math.sin(i * 2.17) * .7;
       const pose = this.getPose((i * .071 + .018) % 1, lane);
-      const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 28), materials[i % materials.length]);
+      const points: THREE.Vector2[] = [];
+      for (let point = 0; point < 22; point++) {
+        const angle = point / 22 * Math.PI * 2;
+        const irregularity = 1 + Math.sin(point * 2.73 + i * 1.91) * .13 + Math.sin(point * 5.17 + i) * .055;
+        points.push(new THREE.Vector2(Math.cos(angle) * irregularity, Math.sin(angle) * irregularity));
+      }
+      const patch = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(points)), materials[i % materials.length]);
       patch.scale.set(1.45 + (i % 6) * .46, .56 + (i % 4) * .2, 1);
       patch.rotation.x = -Math.PI / 2;
       patch.rotation.z = -Math.atan2(pose.tangent.x, pose.tangent.z);
@@ -150,7 +156,7 @@ export class Track {
   }
 
   private addLaneMarks(): void {
-    const white = new THREE.MeshStandardMaterial({ color: 0xe7e3d6, roughness: .4, emissive: 0x302d24 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xc9c6bc, roughness: .66, emissive: 0x090806 });
     for (const lane of [-4, 0, 4]) {
       for (let i = 0; i < 72; i++) {
         if (i % 2) continue;

@@ -28,7 +28,7 @@ export class AutoRickshaw {
     this.headlight.target = target;
     this.headlight.castShadow = false;
 
-    const tailGlow = new THREE.PointLight(0xff2b18, 4.5, 5.5, 2);
+    const tailGlow = new THREE.PointLight(0xff2b18, .65, 2.2, 2);
     tailGlow.position.set(0, .62, -.98);
     this.body.add(tailGlow);
     scene.add(this.group);
@@ -145,12 +145,12 @@ export class AutoRickshaw {
     context.fillRect(0, 0, 256, 256);
     const texture = new THREE.CanvasTexture(canvas);
     const shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.95, 3.05),
-      new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: .52, depthWrite: false, toneMapped: false }),
+      new THREE.PlaneGeometry(1.72, 2.62),
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: .7, depthWrite: false, toneMapped: false }),
     );
     shadow.name = "Auto contact shadow";
     shadow.rotation.x = -Math.PI / 2;
-    shadow.position.set(0, -.068, -.05);
+    shadow.position.set(0, -.035, -.05);
     shadow.renderOrder = 2;
     this.group.add(shadow);
   }
@@ -179,7 +179,11 @@ export class AutoRickshaw {
             object.receiveShadow = true;
             const materials = Array.isArray(object.material) ? object.material : [object.material];
             materials.forEach((material) => {
-              if (material instanceof THREE.MeshStandardMaterial) material.envMapIntensity = 1.2;
+              if (material instanceof THREE.MeshStandardMaterial) {
+                material.envMapIntensity = .72;
+                material.metalness = Math.min(material.metalness, .48);
+                material.roughness = Math.max(material.roughness, .42);
+              }
             });
             if (/^Tyre_/.test(object.name)) this.heroWheels.push(object);
           }
