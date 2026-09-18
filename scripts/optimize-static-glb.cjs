@@ -17,11 +17,16 @@ async function optimize() {
     if (image.bufferView === undefined || !["image/png", "image/jpeg"].includes(image.mimeType)) continue;
     const view = json.bufferViews[image.bufferView];
     const bytes = source.subarray(binaryStart + (view.byteOffset || 0), binaryStart + (view.byteOffset || 0) + view.byteLength);
-    replacements.set(image.bufferView, await sharp(bytes)
-      .resize(1024, 1024, { fit: "fill", withoutEnlargement: true })
-      .jpeg({ quality: 84, chromaSubsampling: "4:4:4", progressive: true })
-      .toBuffer());
-    image.mimeType = "image/jpeg";
+    const isDataMap = /metallic|roughness|normal|occlusion/i.test(image.name || "");
+    const pipeline = sharp(bytes).resize(2048, 2048, {
+      fit: "inside",
+      withoutEnlargement: true,
+      kernel: sharp.kernel.lanczos3,
+    });
+    replacements.set(image.bufferView, isDataMap
+      ? await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer()
+      : await pipeline.jpeg({ quality: 92, chromaSubsampling: "4:4:4", progressive: true }).toBuffer());
+    image.mimeType = isDataMap ? "image/png" : "image/jpeg";
   }
 
   const chunks = [];
@@ -41,7 +46,13 @@ async function optimize() {
   if (binaryPadding) chunks.push(Buffer.alloc(binaryPadding));
   const binary = Buffer.concat(chunks);
   json.buffers[0].byteLength = binary.length;
-  json.asset.extras = { ...(json.asset.extras || {}), optimizedForWeb: true, maxTextureSize: 1024 };
+  json.asset.extras = {
+    ...(json.asset.extras || {}),
+    optimizedForWeb: true,
+    maxTextureSize: 2048,
+    colorTextureQuality: 92,
+    dataMapsLossless: true,
+  };
 
   let jsonBytes = Buffer.from(JSON.stringify(json));
   const jsonPadding = (4 - (jsonBytes.length % 4)) % 4;
