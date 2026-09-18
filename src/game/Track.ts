@@ -29,6 +29,7 @@ export class Track {
     this.length = this.curve.getLength();
     this.group.name = "Maximum City Circuit";
     this.group.add(this.createRoad());
+    this.addWetPatches();
     this.addLaneMarks();
     this.addRoadEdge();
     this.addPromenadeBarrier();
@@ -70,17 +71,82 @@ export class Track {
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
+    const { colorMap, roughnessMap } = this.createAsphaltTextures();
     const material = new THREE.MeshPhysicalMaterial({
-      color: theme.palette.road,
-      roughness: .38,
+      color: 0x6f7778,
+      map: colorMap,
+      roughnessMap,
+      roughness: .82,
       metalness: .04,
-      clearcoat: .55,
-      clearcoatRoughness: .24,
-      envMapIntensity: .85,
+      clearcoat: .42,
+      clearcoatRoughness: .18,
+      envMapIntensity: 1.05,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
     return road;
+  }
+
+  private createAsphaltTextures(): { colorMap: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture } {
+    const size = 512;
+    const colorCanvas = document.createElement("canvas");
+    const roughnessCanvas = document.createElement("canvas");
+    colorCanvas.width = colorCanvas.height = roughnessCanvas.width = roughnessCanvas.height = size;
+    const colorContext = colorCanvas.getContext("2d")!;
+    const roughnessContext = roughnessCanvas.getContext("2d")!;
+    const colorImage = colorContext.createImageData(size, size);
+    const roughnessImage = roughnessContext.createImageData(size, size);
+    let seed = 18427;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+
+    for (let i = 0; i < size * size; i++) {
+      const grain = random();
+      const aggregate = random() > .986 ? 26 + random() * 24 : 0;
+      const value = Math.round(24 + grain * 18 + aggregate);
+      const colorOffset = i * 4;
+      colorImage.data[colorOffset] = value;
+      colorImage.data[colorOffset + 1] = value + 3;
+      colorImage.data[colorOffset + 2] = value + 4;
+      colorImage.data[colorOffset + 3] = 255;
+      const roughness = Math.round(154 + grain * 74 - aggregate * 1.4);
+      roughnessImage.data[colorOffset] = roughness;
+      roughnessImage.data[colorOffset + 1] = roughness;
+      roughnessImage.data[colorOffset + 2] = roughness;
+      roughnessImage.data[colorOffset + 3] = 255;
+    }
+    colorContext.putImageData(colorImage, 0, 0);
+    roughnessContext.putImageData(roughnessImage, 0, 0);
+
+    const colorMap = new THREE.CanvasTexture(colorCanvas);
+    colorMap.colorSpace = THREE.SRGBColorSpace;
+    const roughnessMap = new THREE.CanvasTexture(roughnessCanvas);
+    for (const texture of [colorMap, roughnessMap]) {
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(7, 1);
+      texture.anisotropy = 8;
+    }
+    return { colorMap, roughnessMap };
+  }
+
+  private addWetPatches(): void {
+    const materials = [
+      new THREE.MeshPhysicalMaterial({ color: 0x15272b, roughness: .12, metalness: .08, clearcoat: 1, clearcoatRoughness: .06, transparent: true, opacity: .34, depthWrite: false }),
+      new THREE.MeshPhysicalMaterial({ color: 0x263437, roughness: .2, metalness: .04, clearcoat: .9, clearcoatRoughness: .1, transparent: true, opacity: .24, depthWrite: false }),
+    ];
+    for (let i = 0; i < 34; i++) {
+      const lane = [-7.1, -3.5, 1.8, 6.4][i % 4] + Math.sin(i * 2.17) * .7;
+      const pose = this.getPose((i * .071 + .018) % 1, lane);
+      const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 28), materials[i % materials.length]);
+      patch.scale.set(1.1 + (i % 5) * .38, .48 + (i % 3) * .16, 1);
+      patch.rotation.x = -Math.PI / 2;
+      patch.rotation.z = -Math.atan2(pose.tangent.x, pose.tangent.z);
+      patch.position.copy(pose.position).setY(.052);
+      patch.renderOrder = 1;
+      this.group.add(patch);
+    }
   }
 
   private addLaneMarks(): void {

@@ -17,6 +17,7 @@ export class AutoRickshaw {
     this.group.add(this.body);
     this.buildBody();
     this.buildWheels();
+    this.addContactShadow();
     this.loadHeroModel();
 
     this.headlight = new THREE.SpotLight(0xffd49a, 46, 34, Math.PI / 7, .6, 1.4);
@@ -129,6 +130,29 @@ export class AutoRickshaw {
     this.frontWheelPivot.position.set(0, .37, .95);
     this.frontWheelPivot.add(makeWheel());
     this.body.add(rearLeft, rearRight, this.frontWheelPivot);
+  }
+
+  private addContactShadow(): void {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const context = canvas.getContext("2d")!;
+    const gradient = context.createRadialGradient(128, 128, 22, 128, 128, 126);
+    gradient.addColorStop(0, "rgba(0,0,0,.72)");
+    gradient.addColorStop(.5, "rgba(0,0,0,.38)");
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 256, 256);
+    const texture = new THREE.CanvasTexture(canvas);
+    const shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.95, 3.05),
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: .52, depthWrite: false, toneMapped: false }),
+    );
+    shadow.name = "Auto contact shadow";
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(0, -.068, -.05);
+    shadow.renderOrder = 2;
+    this.group.add(shadow);
   }
 
   private loadHeroModel(): void {
