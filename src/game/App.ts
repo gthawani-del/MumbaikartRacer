@@ -1,21 +1,16 @@
 import * as THREE from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { AutoRickshaw } from "./AutoRickshaw";
 import { Environment } from "./Environment";
 import { Input } from "./Input";
 import { Track } from "./Track";
-import { VehiclePhysics } from "./VehiclePhysics";
+import { VehicleDynamics } from "./VehicleDynamics";
 import theme from "../theme.json";
 
 type Mode = "waiting" | "cinematic" | "drive";
 
 export class App {
   private readonly renderer: THREE.WebGLRenderer;
-  private readonly composer: EffectComposer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(52, 1, .1, 900);
   private readonly clock = new THREE.Clock();
@@ -23,7 +18,7 @@ export class App {
   private readonly auto: AutoRickshaw;
   private readonly environment: Environment;
   private readonly input: Input;
-  private readonly vehiclePhysics = new VehiclePhysics();
+  private readonly vehicleDynamics = new VehicleDynamics();
   private readonly mobile = matchMedia("(pointer: coarse)").matches || window.innerWidth < 760;
   private mode: Mode = "waiting";
   private modeTime = 0;
@@ -36,6 +31,7 @@ export class App {
   private audioContext?: AudioContext;
   private engineOscillator?: OscillatorNode;
   private engineGain?: GainNode;
+  private contextLost = false;
 
   constructor(private readonly root: HTMLElement, canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.mobile, powerPreference: "high-performance" });
@@ -43,8 +39,18 @@ export class App {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = theme.render.exposure;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 1.15 : 1.65));
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 1 : 1.25));
+    canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      this.contextLost = true;
+      document.getElementById("loading")?.classList.remove("is-hidden");
+    });
+    canvas.addEventListener("webglcontextrestored", () => {
+      this.contextLost = false;
+      this.resize();
+      document.getElementById("loading")?.classList.add("is-hidden");
+    });
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
@@ -57,16 +63,6 @@ export class App {
     this.input = new Input(root);
     this.addLighting();
     this.placeAuto();
-
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(new UnrealBloomPass(
-      new THREE.Vector2(innerWidth, innerHeight),
-      theme.render.bloomStrength,
-      theme.render.bloomRadius,
-      theme.render.bloomThreshold,
-    ));
-    this.composer.addPass(new OutputPass());
 
     this.camera.position.set(-50, 4, 31);
     this.camera.lookAt(this.auto.group.position);
@@ -107,7 +103,7 @@ export class App {
     this.environment.update(delta, this.auto.group.position, this.speed, environmentPose.tangent, environmentPose.side);
     this.updateHud();
     this.updateAudio();
-    this.composer.render();
+    if (!this.contextLost) this.renderer.render(this.scene, this.camera);
   }
 
   private updateDriving(delta: number): void {
@@ -128,7 +124,7 @@ export class App {
     this.laneOffset = THREE.MathUtils.clamp(this.laneOffset, -this.track.width + 2.1, this.track.width - 2.1);
     this.progress = (this.progress + (this.speed / 3.6) / this.track.length * delta) % 1;
     this.placeAuto();
-    const vehiclePose = this.vehiclePhysics.update(delta, this.speed, this.steer, this.drift, brake);
+    const vehiclePose = this.vehicleDynamics.update(delta, this.speed, this.steer, this.drift, brake);
     this.auto.update(delta, this.speed, this.steer, this.drift, vehiclePose);
 
     if (this.mode === "cinematic" && this.modeTime > 9.8) this.takeControl();
@@ -181,12 +177,12 @@ export class App {
   }
 
   private addLighting(): void {
-    const hemisphere = new THREE.HemisphereLight(0x8ebbd0, 0x251c18, .92);
+    const hemisphere = new THREE.HemisphereLight(0x7899aa, 0x211b19, .62);
     this.scene.add(hemisphere);
-    const sun = new THREE.DirectionalLight(0xffb676, 2.05);
+    const sun = new THREE.DirectionalLight(0xffb676, 1.28);
     sun.position.set(-72, 52, -38);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048);
+    sun.shadow.mapSize.set(this.mobile ? 512 : 1024, this.mobile ? 512 : 1024);
     sun.shadow.camera.near = 1;
     sun.shadow.camera.far = 230;
     sun.shadow.camera.left = -80;
@@ -245,11 +241,10 @@ export class App {
   }
 
   private resize(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
-    this.composer?.setSize(width, height);
   }
 }

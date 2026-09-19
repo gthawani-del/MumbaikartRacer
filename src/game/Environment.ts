@@ -27,12 +27,12 @@ export class Environment {
     this.fallbackScenery.name = "Procedural scenery fallback";
     scene.add(this.fallbackScenery);
     this.addCity(this.fallbackScenery, track, compact ? 75 : 145);
-    this.loadEnvironmentKit(scene, track, compact);
+    // Keep one coherent procedural city until authored modules pass the art bar.
     this.loadBookstore(scene, track);
     this.loadStreetlights(scene, track, compact ? 14 : 24);
-    this.loadPalms(scene, track, compact ? 6 : 10);
+    this.addPalms(this.fallbackScenery, track, compact ? 6 : 10);
     this.addHeroSign(scene, track);
-    this.addTraffic(scene, compact ? 7 : 12);
+    // Placeholder box traffic was visually worse than an intentionally sparse road.
     this.loadRedBus(scene);
     this.rainCount = compact ? theme.weather.rainMobile : theme.weather.rainDesktop;
     const rain = this.createRain(this.rainCount);

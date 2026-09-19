@@ -29,7 +29,6 @@ export class Track {
     this.length = this.curve.getLength();
     this.group.name = "Maximum City Circuit";
     this.group.add(this.createRoad());
-    this.addWetPatches();
     this.addLaneMarks();
     this.addRoadEdge();
     this.addPromenadeBarrier();
@@ -74,18 +73,18 @@ export class Track {
 
     const { colorMap, normalMap, roughnessMap, aoMap } = this.loadAsphaltTextures();
     const material = new THREE.MeshPhysicalMaterial({
-      color: 0xb9bfbc,
+      color: 0x88918f,
       map: colorMap,
       normalMap,
       normalScale: new THREE.Vector2(.38, .38),
       roughnessMap,
       aoMap,
       aoMapIntensity: .48,
-      roughness: .84,
+      roughness: .66,
       metalness: 0,
-      clearcoat: .1,
-      clearcoatRoughness: .34,
-      envMapIntensity: .72,
+      clearcoat: .42,
+      clearcoatRoughness: .22,
+      envMapIntensity: .58,
     });
     const road = new THREE.Mesh(geometry, material);
     road.receiveShadow = true;
@@ -115,32 +114,8 @@ export class Track {
     return { colorMap, normalMap, roughnessMap, aoMap };
   }
 
-  private addWetPatches(): void {
-    const materials = [
-      new THREE.MeshPhysicalMaterial({ color: 0x101b1e, roughness: .1, metalness: 0, clearcoat: 1, clearcoatRoughness: .07, transparent: true, opacity: .38, depthWrite: false, envMapIntensity: .72 }),
-      new THREE.MeshPhysicalMaterial({ color: 0x182528, roughness: .16, metalness: 0, clearcoat: .9, clearcoatRoughness: .11, transparent: true, opacity: .29, depthWrite: false, envMapIntensity: .58 }),
-    ];
-    for (let i = 0; i < 44; i++) {
-      const lane = [-7.1, -3.5, 1.8, 6.4][i % 4] + Math.sin(i * 2.17) * .7;
-      const pose = this.getPose((i * .071 + .018) % 1, lane);
-      const points: THREE.Vector2[] = [];
-      for (let point = 0; point < 22; point++) {
-        const angle = point / 22 * Math.PI * 2;
-        const irregularity = 1 + Math.sin(point * 2.73 + i * 1.91) * .13 + Math.sin(point * 5.17 + i) * .055;
-        points.push(new THREE.Vector2(Math.cos(angle) * irregularity, Math.sin(angle) * irregularity));
-      }
-      const patch = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(points)), materials[i % materials.length]);
-      patch.scale.set(.9 + (i % 6) * .31, .32 + (i % 4) * .14, 1);
-      patch.rotation.x = -Math.PI / 2;
-      patch.rotation.z = -Math.atan2(pose.tangent.x, pose.tangent.z);
-      patch.position.copy(pose.position).setY(.058);
-      patch.renderOrder = 1;
-      this.group.add(patch);
-    }
-  }
-
   private addLaneMarks(): void {
-    const white = new THREE.MeshStandardMaterial({ color: 0xc9c6bc, roughness: .66, emissive: 0x090806 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xa9aaa4, roughness: .7 });
     for (const lane of [-4, 0, 4]) {
       for (let i = 0; i < 72; i++) {
         if (i % 2) continue;
@@ -155,7 +130,7 @@ export class Track {
 
   private addRoadEdge(): void {
     const curbMaterials = [
-      new THREE.MeshStandardMaterial({ color: 0xe6ded0, roughness: .72 }),
+      new THREE.MeshStandardMaterial({ color: 0xb9b5aa, roughness: .76 }),
       new THREE.MeshStandardMaterial({ color: 0x2d3334, roughness: .78 }),
     ];
     for (let i = 0; i < 150; i++) {
@@ -173,7 +148,7 @@ export class Track {
 
   private addPromenadeBarrier(): void {
     const postGeo = new THREE.CylinderGeometry(.15, .2, .82, 10);
-    const postMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c9, roughness: .56 });
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xa9a79f, roughness: .68 });
     const posts = new THREE.InstancedMesh(postGeo, postMat, 110);
     posts.name = "Procedural promenade barrier";
     const matrix = new THREE.Matrix4();

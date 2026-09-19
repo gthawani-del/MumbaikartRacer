@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import theme from "../theme.json";
-import type { VehiclePose } from "./VehiclePhysics";
+import type { VehiclePose } from "./VehicleDynamics";
 
 export class AutoRickshaw {
   readonly group = new THREE.Group();
