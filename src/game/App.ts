@@ -8,6 +8,7 @@ import { AutoRickshaw } from "./AutoRickshaw";
 import { Environment } from "./Environment";
 import { Input } from "./Input";
 import { Track } from "./Track";
+import { VehiclePhysics } from "./VehiclePhysics";
 import theme from "../theme.json";
 
 type Mode = "waiting" | "cinematic" | "drive";
@@ -22,6 +23,7 @@ export class App {
   private readonly auto: AutoRickshaw;
   private readonly environment: Environment;
   private readonly input: Input;
+  private readonly vehiclePhysics = new VehiclePhysics();
   private readonly mobile = matchMedia("(pointer: coarse)").matches || window.innerWidth < 760;
   private mode: Mode = "waiting";
   private modeTime = 0;
@@ -126,7 +128,8 @@ export class App {
     this.laneOffset = THREE.MathUtils.clamp(this.laneOffset, -this.track.width + 2.1, this.track.width - 2.1);
     this.progress = (this.progress + (this.speed / 3.6) / this.track.length * delta) % 1;
     this.placeAuto();
-    this.auto.update(delta, this.speed, this.steer, this.drift);
+    const vehiclePose = this.vehiclePhysics.update(delta, this.speed, this.steer, this.drift, brake);
+    this.auto.update(delta, this.speed, this.steer, this.drift, vehiclePose);
 
     if (this.mode === "cinematic" && this.modeTime > 9.8) this.takeControl();
   }

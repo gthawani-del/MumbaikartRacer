@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import theme from "../theme.json";
+import type { VehiclePose } from "./VehiclePhysics";
 
 export class AutoRickshaw {
   readonly group = new THREE.Group();
@@ -9,6 +10,7 @@ export class AutoRickshaw {
   private readonly frontWheelPivot = new THREE.Group();
   private readonly wheels: THREE.Object3D[] = [];
   private readonly heroWheels: THREE.Object3D[] = [];
+  private readonly driverRig = new THREE.Group();
   private readonly headlight: THREE.SpotLight;
   private elapsed = 0;
 
@@ -17,6 +19,7 @@ export class AutoRickshaw {
     this.group.add(this.body);
     this.buildBody();
     this.buildWheels();
+    this.buildDriver();
     this.addContactShadow();
     this.loadHeroModel();
 
@@ -31,19 +34,36 @@ export class AutoRickshaw {
     const tailGlow = new THREE.PointLight(0xff2b18, .65, 2.2, 2);
     tailGlow.position.set(0, .62, -.98);
     this.body.add(tailGlow);
+    const tailMaterial = new THREE.MeshStandardMaterial({
+      color: 0xff3a24,
+      emissive: 0xff1608,
+      emissiveIntensity: 3.2,
+      roughness: .28,
+    });
+    for (const x of [-.43, .43]) {
+      const lamp = new THREE.Mesh(new RoundedBoxGeometry(.16, .24, .035, 3, .025), tailMaterial);
+      lamp.position.set(x, .68, -1.08);
+      lamp.rotation.y = Math.PI;
+      this.driverRig.add(lamp);
+    }
     scene.add(this.group);
   }
 
-  update(delta: number, speed: number, steer: number, drift: number): void {
+  update(delta: number, speed: number, steer: number, drift: number, physics: VehiclePose): void {
     this.elapsed += delta;
     const wheelSpin = speed * delta * .58;
     this.wheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
     this.heroWheels.forEach((wheel) => { wheel.rotation.x -= wheelSpin; });
     this.frontWheelPivot.rotation.y = steer * .42;
-    const engineVibration = Math.sin(this.elapsed * (15 + speed * .035)) * Math.min(speed / 18000, .0028);
-    this.body.position.y = THREE.MathUtils.damp(this.body.position.y, engineVibration, 12, delta);
-    this.body.rotation.z = THREE.MathUtils.lerp(this.body.rotation.z, -steer * .072 - drift * .095, 1 - Math.exp(-delta * 7));
-    this.body.rotation.x = THREE.MathUtils.lerp(this.body.rotation.x, -Math.min(speed / 8000, .016), 1 - Math.exp(-delta * 3.5));
+    const engineVibration = Math.sin(this.elapsed * (15 + speed * .035)) * Math.min(speed / 24000, .0018);
+    this.body.position.y = THREE.MathUtils.damp(this.body.position.y, physics.heave + engineVibration, 14, delta);
+    this.body.rotation.z = THREE.MathUtils.damp(this.body.rotation.z, physics.roll, 9, delta);
+    this.body.rotation.x = THREE.MathUtils.damp(this.body.rotation.x, physics.pitch, 8, delta);
+    this.driverRig.rotation.z = THREE.MathUtils.damp(this.driverRig.rotation.z, -physics.roll * .72 - steer * .035, 8, delta);
+    this.driverRig.rotation.x = THREE.MathUtils.damp(this.driverRig.rotation.x, -physics.pitch * .45, 7, delta);
+    this.wheels[0].position.y = .38 - physics.suspension[0] * .18;
+    this.wheels[1].position.y = .38 - physics.suspension[1] * .18;
+    this.frontWheelPivot.position.y = .37 - physics.suspension[2] * .18;
     this.headlight.intensity = 42 + Math.sin(this.elapsed * 13) * .8;
   }
 
@@ -88,13 +108,6 @@ export class AutoRickshaw {
     headlamp.position.set(0, .86, 1.36);
     this.body.add(headlamp);
 
-    const driverTorso = new THREE.Mesh(new RoundedBoxGeometry(.48, .64, .32, 3, .1), new THREE.MeshStandardMaterial({ color: 0x632a21, roughness: .68 }));
-    driverTorso.position.set(0, 1.24, -.08);
-    this.body.add(driverTorso);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 14), new THREE.MeshStandardMaterial({ color: 0x8a5438, roughness: .72 }));
-    head.position.set(0, 1.68, -.01);
-    this.body.add(head);
-
     const plate = this.makePlate("MH 01\nAUTO");
     plate.position.set(0, .55, -1.12);
     plate.rotation.y = Math.PI;
@@ -106,6 +119,40 @@ export class AutoRickshaw {
         object.receiveShadow = true;
       }
     });
+  }
+
+  private buildDriver(): void {
+    this.driverRig.name = "Animated Mumbai auto driver";
+    const shirt = new THREE.MeshStandardMaterial({ color: 0x315b72, roughness: .82 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0x85543c, roughness: .88 });
+    const hair = new THREE.MeshStandardMaterial({ color: 0x181310, roughness: .9 });
+    const controls = new THREE.MeshStandardMaterial({ color: 0x171c1d, roughness: .48, metalness: .42 });
+    const torso = new THREE.Mesh(new RoundedBoxGeometry(.48, .58, .3, 3, .09), shirt);
+    torso.position.set(0, 1.23, -.03);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(.09, .105, .14, 12), skin);
+    neck.position.set(0, 1.57, .01);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.205, 18, 14), skin);
+    head.scale.set(.88, 1.08, .92);
+    head.position.set(0, 1.75, .015);
+    const hairCap = new THREE.Mesh(new THREE.SphereGeometry(.208, 18, 8, 0, Math.PI * 2, 0, Math.PI * .48), hair);
+    hairCap.position.set(0, 1.79, .005);
+    this.driverRig.add(torso, neck, head, hairCap);
+    const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .56, 10), controls);
+    handlebar.rotation.z = Math.PI / 2;
+    handlebar.position.set(0, 1.12, .54);
+    this.driverRig.add(handlebar);
+    for (const side of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.065, .47, 5, 10), shirt);
+      arm.position.set(side * .21, 1.31, .27);
+      arm.rotation.set(-.72, 0, side * -.2);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(.075, 12, 10), skin);
+      hand.position.set(side * .23, 1.12, .52);
+      this.driverRig.add(arm, hand);
+    }
+    this.driverRig.traverse((object) => {
+      if (object instanceof THREE.Mesh) object.castShadow = true;
+    });
+    this.body.add(this.driverRig);
   }
 
   private buildWheels(): void {
@@ -191,6 +238,8 @@ export class AutoRickshaw {
         this.body.traverse((object) => {
           if (object instanceof THREE.Mesh) object.visible = false;
         });
+        this.driverRig.traverse((object) => { object.visible = true; });
+        this.wheels.forEach((wheel) => wheel.traverse((object) => { object.visible = true; }));
         this.body.add(model);
     };
 
