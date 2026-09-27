@@ -38,6 +38,12 @@ npm run build
 
 Mobile devices receive on-screen steering and drift controls.
 
+## Asset loading and cache
+
+The opening screen tracks the shared Three.js loading manager and stays visible until the initial scene assets finish loading. Public GLBs and textures use a versioned URL and a one-year browser/CDN cache. Bump `assetRevision` in `src/theme.json` whenever a file under `public/assets` is replaced; that gives the browser a fresh URL while preserving cache reuse for unchanged assets.
+
+The asset library includes the main 10.5 MB auto model, a smaller 634 KB fallback, a 7.4 MB BEST bus, a 21 MB bus shelter, streetlights, palm variants, and additional traffic models. Only assets referenced by the active scene are loaded; the other models do not add to the initial download.
+
 ## Art direction
 
 Stylized realism rather than cartoon rendering or uncontrolled photorealism: wet asphalt, warm practical lights, cool monsoon atmosphere, readable silhouettes and restrained cinematic effects.

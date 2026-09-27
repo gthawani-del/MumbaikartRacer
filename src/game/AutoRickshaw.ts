@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import theme from "../theme.json";
+import { assetUrl } from "./assets";
 import type { VehiclePose } from "./VehicleDynamics";
 
 export class AutoRickshaw {
@@ -243,9 +244,9 @@ export class AutoRickshaw {
         this.body.add(model);
     };
 
-    loader.loadAsync(theme.vehicle.model)
+    loader.loadAsync(assetUrl(theme.vehicle.model))
       .then((gltf) => attach(gltf, theme.vehicle.rootNode, theme.vehicle.headingOffset))
-      .catch(() => loader.loadAsync(theme.vehicle.fallbackModel)
+      .catch(() => loader.loadAsync(assetUrl(theme.vehicle.fallbackModel))
         .then((gltf) => attach(gltf, theme.vehicle.fallbackRootNode, theme.vehicle.fallbackHeadingOffset))
         .catch(() => {
           // Keep the lightweight procedural auto as the final offline fallback.

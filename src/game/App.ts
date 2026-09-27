@@ -41,6 +41,25 @@ export class App {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 1 : 1.25));
+    const loading = document.getElementById("loading");
+    const loadingLabel = document.getElementById("loading-label");
+    const progressBar = document.getElementById("load-progress");
+    const assetManager = THREE.DefaultLoadingManager;
+    assetManager.onProgress = (_url, loaded, total) => {
+      const percent = total ? Math.round((loaded / total) * 100) : 0;
+      if (progressBar) progressBar.style.width = `${percent}%`;
+      progressBar?.parentElement?.setAttribute("aria-valuenow", percent.toString());
+      if (loadingLabel) loadingLabel.textContent = `LOADING CITY · ${loaded} / ${total} ASSETS`;
+    };
+    assetManager.onError = () => {
+      if (loadingLabel) loadingLabel.textContent = "LOADING CITY DETAILS…";
+    };
+    assetManager.onLoad = () => {
+      if (progressBar) progressBar.style.width = "100%";
+      progressBar?.parentElement?.setAttribute("aria-valuenow", "100");
+      if (loadingLabel) loadingLabel.textContent = "CITY READY";
+      loading?.classList.add("is-hidden");
+    };
     canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
       this.contextLost = true;
@@ -70,7 +89,6 @@ export class App {
     window.addEventListener("resize", () => this.resize());
     this.bindUi();
     requestAnimationFrame(() => this.tick());
-    requestAnimationFrame(() => document.getElementById("loading")?.classList.add("is-hidden"));
   }
 
   start(): void {
@@ -110,7 +128,8 @@ export class App {
     const cinematicThrottle = this.mode === "cinematic" ? THREE.MathUtils.smoothstep(this.modeTime, 0, 7) : 1;
     const accelerate = this.mode === "cinematic" || this.input.isHeld("accelerate") || this.mobile;
     const brake = this.input.isHeld("brake");
-    const steeringInput = (this.input.isHeld("left") ? -1 : 0) + (this.input.isHeld("right") ? 1 : 0);
+    // Track side is left-of-travel; invert the input axis to match the chase-camera view.
+    const steeringInput = (this.input.isHeld("left") ? 1 : 0) + (this.input.isHeld("right") ? -1 : 0);
     const driftHeld = this.input.isHeld("drift") && Math.abs(steeringInput) > .1 && this.speed > 48;
 
     const targetSpeed = brake ? 24 : accelerate ? (driftHeld ? 118 : 136) : 66;

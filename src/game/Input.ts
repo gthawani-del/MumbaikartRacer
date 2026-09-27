@@ -26,12 +26,13 @@ export class Input {
 
     root.querySelectorAll<HTMLButtonElement>("[data-control]").forEach((button) => {
       const control = button.dataset.control as Control;
-      const press = (event: Event) => {
+      const press = (event: PointerEvent) => {
         event.preventDefault();
+        button.setPointerCapture(event.pointerId);
         this.held.add(control);
         button.classList.add("is-active");
       };
-      const release = (event: Event) => {
+      const release = (event: PointerEvent) => {
         event.preventDefault();
         this.held.delete(control);
         button.classList.remove("is-active");
@@ -39,7 +40,16 @@ export class Input {
       button.addEventListener("pointerdown", press);
       button.addEventListener("pointerup", release);
       button.addEventListener("pointercancel", release);
-      button.addEventListener("pointerleave", release);
+      button.addEventListener("lostpointercapture", release);
+    });
+
+    const clearHeldControls = () => {
+      this.held.clear();
+      root.querySelectorAll<HTMLButtonElement>("[data-control]").forEach((button) => button.classList.remove("is-active"));
+    };
+    window.addEventListener("blur", clearHeldControls);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) clearHeldControls();
     });
   }
 

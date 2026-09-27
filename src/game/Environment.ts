@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Track } from "./Track";
 import theme from "../theme.json";
+import { assetUrl } from "./assets";
 
 export class Environment {
   readonly rain: THREE.Points;
@@ -48,7 +49,7 @@ export class Environment {
   }
 
   private loadEnvironmentKit(scene: THREE.Scene, track: Track, compact: boolean): void {
-    new GLTFLoader().load(theme.environment.model, (gltf) => {
+    new GLTFLoader().load(assetUrl(theme.environment.model), (gltf) => {
       const authored = new THREE.Group();
       authored.name = "Authored Mumbai environment";
       const cloneModule = (name: string, scale = 1) => {
@@ -109,7 +110,7 @@ export class Environment {
   }
 
   private loadBookstore(scene: THREE.Scene, track: Track): void {
-    new GLTFLoader().load(theme.environment.bookstoreModel, (gltf) => {
+    new GLTFLoader().load(assetUrl(theme.environment.bookstoreModel), (gltf) => {
       const model = gltf.scene;
       const bounds = new THREE.Box3().setFromObject(model);
       const size = bounds.getSize(new THREE.Vector3());
@@ -142,7 +143,7 @@ export class Environment {
   }
 
   private loadStreetlights(scene: THREE.Scene, track: Track, count: number): void {
-    new GLTFLoader().load(theme.environment.streetlightModel, (gltf) => {
+    new GLTFLoader().load(assetUrl(theme.environment.streetlightModel), (gltf) => {
       const source = this.firstMesh(gltf.scene);
       if (!source) return;
       const bounds = new THREE.Box3().setFromObject(source);
@@ -182,7 +183,7 @@ export class Environment {
   }
 
   private loadPalms(scene: THREE.Scene, track: Track, count: number): void {
-    new GLTFLoader().load(theme.environment.palmModel, (gltf) => {
+    new GLTFLoader().load(assetUrl(theme.environment.palmModel), (gltf) => {
       const source = this.firstMesh(gltf.scene);
       if (!source) return;
       const bounds = new THREE.Box3().setFromObject(source);
@@ -239,7 +240,7 @@ export class Environment {
     for (const item of this.traffic) {
       item.progress = (item.progress + delta * item.speed) % 1;
       const pose = this.track.getPose(item.progress, item.offset);
-      item.vehicle.position.copy(pose.position).setY(.17);
+      item.vehicle.position.copy(pose.position).setY(.08);
       item.vehicle.rotation.y = Math.atan2(pose.tangent.x, pose.tangent.z) + item.headingOffset;
     }
   }
@@ -347,7 +348,7 @@ export class Environment {
   }
 
   private loadRedBus(scene: THREE.Scene): void {
-    new GLTFLoader().load(theme.environment.redBusModel, (gltf) => {
+    new GLTFLoader().load(assetUrl(theme.environment.redBusModel), (gltf) => {
       const model = gltf.scene;
       const bounds = new THREE.Box3().setFromObject(model);
       const size = bounds.getSize(new THREE.Vector3());
@@ -374,7 +375,7 @@ export class Environment {
       this.traffic.push({
         vehicle,
         progress: .37,
-        offset: -7.2,
+        offset: -3.4,
         speed: .0085,
         headingOffset: -Math.PI / 2,
       });

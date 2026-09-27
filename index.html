@@ -23,8 +23,8 @@
       </section>
 
       <div class="loading" id="loading">
-        <div class="loading__line"><i></i></div>
-        <span>BUILDING THE MAXIMUM CITY</span>
+        <div class="loading__line" role="progressbar" aria-label="Loading game assets" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-progress"></i></div>
+        <span id="loading-label" role="status" aria-live="polite">BUILDING THE MAXIMUM CITY</span>
       </div>
 
       <section class="hud" id="hud" aria-live="polite">
@@ -37,6 +37,17 @@
           <small>मुंबई</small>
         </div>
         <div class="speed">
+          <div class="auto-mark" aria-label="Your auto-rickshaw">
+            <svg viewBox="0 0 64 40" aria-hidden="true">
+              <path d="M18 4h28l7 11h5v19H6V15h5z" fill="#0b5d46" stroke="#ffb042" stroke-width="2.5" />
+              <path d="M20 7h24l5 8H15z" fill="#83aeb1" />
+              <path d="M12 20h40v10H12z" fill="#eab63f" />
+              <circle cx="9" cy="30" r="4" fill="#101719" stroke="#d1d8d2" stroke-width="1.5" />
+              <circle cx="55" cy="30" r="4" fill="#101719" stroke="#d1d8d2" stroke-width="1.5" />
+              <circle cx="32" cy="5" r="4" fill="#101719" stroke="#d1d8d2" stroke-width="1.5" />
+            </svg>
+            <span>YOUR AUTO</span>
+          </div>
           <strong id="speed">000</strong>
           <span>KM/H</span>
           <div class="boost"><i id="boost"></i></div>

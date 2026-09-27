@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import theme from "../theme.json";
+import { assetUrl } from "./assets";
 
 export interface TrackPose {
   position: THREE.Vector3;
@@ -99,10 +100,10 @@ export class Track {
   } {
     const loader = new THREE.TextureLoader();
     const root = "/assets/textures/asphalt-033/";
-    const colorMap = loader.load(`${root}color.jpg`);
-    const normalMap = loader.load(`${root}normal-gl.jpg`);
-    const roughnessMap = loader.load(`${root}roughness.jpg`);
-    const aoMap = loader.load(`${root}ambient-occlusion.jpg`);
+    const colorMap = loader.load(assetUrl(`${root}color.jpg`));
+    const normalMap = loader.load(assetUrl(`${root}normal-gl.jpg`));
+    const roughnessMap = loader.load(assetUrl(`${root}roughness.jpg`));
+    const aoMap = loader.load(assetUrl(`${root}ambient-occlusion.jpg`));
     colorMap.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [colorMap, normalMap, roughnessMap, aoMap]) {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;

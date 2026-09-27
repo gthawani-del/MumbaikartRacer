@@ -1,7 +1,12 @@
 {
   "id": "mumbai-monsoon",
   "displayName": "Mumbai Monsoon",
-  "districts": ["MARINE DRIVE", "FORT DISTRICT", "MONSOON UNDERPASS", "SEAFACE FLYOVER"],
+  "districts": [
+    "MARINE DRIVE",
+    "FORT DISTRICT",
+    "MONSOON UNDERPASS",
+    "SEAFACE FLYOVER"
+  ],
   "vehicle": {
     "model": "/assets/auto-kart.glb",
     "rootNode": "AutoKartRoot",
@@ -24,7 +29,11 @@
     "palmHeight": 5.6,
     "redBusModel": "/assets/red-bus.glb",
     "redBusHeight": 2.9,
-    "buildings": ["ArtDeco_Cream", "ArtDeco_Teal", "ArtDeco_Coral"],
+    "buildings": [
+      "ArtDeco_Cream",
+      "ArtDeco_Teal",
+      "ArtDeco_Coral"
+    ],
     "promenade": "Promenade_Module",
     "streetLamp": "StreetLamp_Module",
     "palm": "Palm_Module",
@@ -52,5 +61,6 @@
     "skyHorizon": "#315366",
     "skyWarm": "#d87a3e",
     "accent": "#f4b146"
-  }
+  },
+  "assetRevision": "4e6350c2"
 }
